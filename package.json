@@ -1,0 +1,29 @@
+{
+  "name": "hoe-of-all-hobbies",
+  "version": "1.0.0",
+  "dependencies": {
+    "@stripe/react-stripe-js": "^2.4.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "@tailwindcss/postcss": "^4.3.0",
+    "autoprefixer": "^10.5.0",
+    "lucide-react": "^0.263.0",
+    "next": "^14.0.0",
+    "postcss": "^8.5.15",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.48.0",
+    "recharts": "^2.10.0",
+    "stripe": "^14.0.0",
+    "tailwindcss": "^4.3.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.53.0",
+    "eslint-config-next": "^14.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  }
+}
