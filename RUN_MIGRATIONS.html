@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoe of All Hobbies - Database Initialization</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        .progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            font-size: 12px;
+        }
+        .step {
+            text-align: center;
+            flex: 1;
+        }
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-weight: bold;
+        }
+        .step.active .step-number {
+            background: #667eea;
+            color: white;
+        }
+        .step-name {
+            color: #999;
+            font-weight: 500;
+        }
+        .step.active .step-name {
+            color: #667eea;
+        }
+        .instructions {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+        .instructions h3 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .instructions ol {
+            margin-left: 20px;
+            color: #666;
+            line-height: 1.8;
+        }
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            margin: 10px 0;
+            overflow-x: auto;
+            word-break: break-all;
+        }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        .btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .checkmark {
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .feature-list {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+        .feature-list h4 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .feature {
+            color: #666;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+        }
+        .feature:before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Hoe of All Hobbies</h1>
+        <p class="subtitle">Complete Your Marketplace Setup</p>
+
+        <div class="progress">
+            <div class="step active">
+                <div class="step-number">✓</div>
+                <div class="step-name">Build</div>
+            </div>
+            <div class="step active">
+                <div class="step-number">✓</div>
+                <div class="step-name">Deploy</div>
+            </div>
+            <div class="step active">
+                <div class="step-number">3</div>
+                <div class="step-name">Database</div>
+            </div>
+        </div>
+
+        <div class="feature-list">
+            <h4>What's Ready</h4>
+            <div class="features">
+                <div class="feature">Full marketplace app</div>
+                <div class="feature">Stripe integration</div>
+                <div class="feature">Authentication</div>
+                <div class="feature">Seller dashboard</div>
+                <div class="feature">Admin dashboard</div>
+                <div class="feature">Live on Vercel</div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>📝 One Final Step: Initialize Database</h3>
+            <ol>
+                <li><strong>Go to Supabase SQL Editor:</strong>
+                    <div class="code-block">https://app.supabase.com/project/tgskrunjdmoyjgrieuzg/sql</div>
+                </li>
+                <li><strong>Sign in</strong> with your GitHub account (sprinteradventure)</li>
+                <li><strong>Copy this SQL</strong> (click button below):
+                    <button class="btn btn-secondary" onclick="copySql()" style="width: auto; margin-top: 10px;">📋 Copy SQL</button>
+                </li>
+                <li><strong>Paste into SQL Editor</strong> - Click in the query area and paste</li>
+                <li><strong>Click RUN</strong> - Green button on the right side</li>
+                <li><strong>Wait 30 seconds</strong> - Database initializes</li>
+            </ol>
+        </div>
+
+        <div class="warning">
+            ⚠️ <strong>Important:</strong> The SQL file contains 48 statements that will create 8 tables, indexes, and security policies. This is a one-time operation.
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="copySql()">📋 Copy Migration SQL</button>
+            <button class="btn btn-secondary" onclick="openSupabase()">🔗 Open Supabase</button>
+        </div>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        // Embedded SQL - will be replaced with actual SQL content
+        const SQL_CONTENT = `-- Enable necessary extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
+-- Users Profile Table
+CREATE TABLE public.user_profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
+  email TEXT NOT NULL UNIQUE,
+  username TEXT UNIQUE,
+  full_name TEXT,
+  avatar_url TEXT,
+  bio TEXT,
+  location TEXT,
+  is_seller BOOLEAN DEFAULT FALSE,
+  seller_verified BOOLEAN DEFAULT FALSE,
+  verification_status TEXT DEFAULT 'unverified' CHECK (verification_status IN ('unverified', 'pending', 'verified')),
+  avg_rating DECIMAL(3,2),
+  total_sales INTEGER DEFAULT 0,
+  total_reviews INTEGER DEFAULT 0,
+  stripe_account_id TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- [Additional SQL continues...]
+-- See MIGRATIONS_READY_TO_RUN.sql for full content`;
+
+        function copySql() {
+            const statusEl = document.getElementById('status');
+
+            // Try to load from file or use embedded
+            fetch('MIGRATIONS_READY_TO_RUN.sql')
+                .then(r => r.text())
+                .then(sql => {
+                    navigator.clipboard.writeText(sql).then(() => {
+                        statusEl.className = 'status success';
+                        statusEl.innerHTML = '<span class="checkmark">✓</span> SQL copied to clipboard! (10,498 bytes)';
+                    }).catch(err => {
+                        // Fallback for older browsers
+                        const textarea = document.createElement('textarea');
+                        textarea.value = sql;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        statusEl.className = 'status success';
+                        statusEl.innerHTML = '<span class="checkmark">✓</span> SQL copied to clipboard!';
+                    });
+                })
+                .catch(() => {
+                    statusEl.className = 'status error';
+                    statusEl.innerHTML = '<span class="checkmark">⚠</span> Could not load SQL file. Open MIGRATIONS_READY_TO_RUN.sql manually and copy its contents.';
+                });
+        }
+
+        function openSupabase() {
+            window.open('https://app.supabase.com/project/tgskrunjdmoyjgrieuzg/sql', '_blank');
+        }
+
+        // Show info on load
+        window.addEventListener('load', () => {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status info';
+            statusEl.innerHTML = '💡 <strong>Ready to initialize?</strong> Click "Copy Migration SQL" then open Supabase and paste it into the SQL editor.';
+        });
+    </script>
+</body>
+</html>
