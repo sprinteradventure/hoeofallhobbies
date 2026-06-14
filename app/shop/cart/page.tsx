@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Trash2, ShoppingCart } from 'lucide-react'
+import { Trash2, ShoppingCart, ArrowRight, Package } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { CartItem } from '@/lib/types'
 
@@ -58,10 +58,12 @@ export default function CartPage() {
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
-        <ShoppingCart className="h-16 w-16 text-neutral-300 mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Your cart is empty</h1>
-        <p className="text-neutral-600 mb-6">Start shopping to add items to your cart</p>
-        <Link href="/shop/products" className="btn-primary px-6 py-2">
+        <div className="w-20 h-20 rounded-full bg-ivory flex items-center justify-center mb-6">
+          <ShoppingCart className="h-10 w-10 text-taupe" />
+        </div>
+        <h1 className="font-cormorant text-3xl font-bold text-charcoal mb-2">Your cart is empty</h1>
+        <p className="text-taupe mb-8 font-lora">Start shopping to add items to your cart</p>
+        <Link href="/shop/products" className="btn btn-primary px-8 py-3">
           Continue Shopping
         </Link>
       </div>
@@ -70,7 +72,7 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12">
-      <h1 className="text-4xl font-bold mb-8">Shopping Cart</h1>
+      <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-8">Shopping Cart</h1>
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Cart Items */}
@@ -78,40 +80,41 @@ export default function CartPage() {
           {cartItems.map((item) => {
             const product = item.product as any
             return (
-              <div key={item.id} className="card flex gap-4">
+              <div key={item.id} className="card flex gap-4 items-start">
                 {product.images?.[0] && (
                   <img
                     src={product.images[0]}
                     alt={product.title}
-                    className="w-24 h-24 object-cover rounded"
+                    className="w-24 h-24 object-cover rounded-xl flex-shrink-0"
                   />
                 )}
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{product.title}</h3>
-                  <p className="text-brand-700 font-bold">${product.price.toFixed(2)}</p>
-                  <div className="flex items-center gap-2 mt-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-cormorant text-lg font-bold text-charcoal">{product.title}</h3>
+                  <p className="text-sm text-taupe">{product.category}</p>
+                  <p className="text-gold font-bold text-lg mt-1">${product.price.toFixed(2)}</p>
+                  <div className="flex items-center gap-2 mt-3">
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="px-2 py-1 border rounded"
+                      className="w-8 h-8 rounded-lg border border-blush flex items-center justify-center hover:bg-ivory"
                     >
                       −
                     </button>
-                    <span className="px-3">{item.quantity}</span>
+                    <span className="w-8 text-center font-semibold">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="px-2 py-1 border rounded"
+                      className="w-8 h-8 rounded-lg border border-blush flex items-center justify-center hover:bg-ivory"
                     >
                       +
                     </button>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold">${(product.price * item.quantity).toFixed(2)}</p>
+                <div className="text-right flex flex-col items-end gap-2">
+                  <p className="font-bold text-charcoal">${(product.price * item.quantity).toFixed(2)}</p>
                   <button
                     onClick={() => removeFromCart(item.id)}
-                    className="text-red-600 hover:text-red-800 mt-2"
+                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-red-500" />
                   </button>
                 </div>
               </div>
@@ -120,30 +123,31 @@ export default function CartPage() {
         </div>
 
         {/* Order Summary */}
-        <div className="card h-fit sticky top-20">
-          <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-          <div className="space-y-2 mb-4 pb-4 border-b">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>${total.toFixed(2)}</span>
+        <div className="card h-fit sticky top-24">
+          <h2 className="font-cormorant text-xl font-bold text-charcoal mb-4">Order Summary</h2>
+          <div className="space-y-3 mb-4 pb-4 border-b border-blush">
+            <div className="flex justify-between text-sm">
+              <span className="text-taupe">Subtotal</span>
+              <span className="font-semibold text-charcoal">${total.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
-              <span>Shipping</span>
-              <span>Calculated at checkout</span>
+            <div className="flex justify-between text-sm">
+              <span className="text-taupe">Shipping</span>
+              <span className="text-taupe">Calculated at checkout</span>
             </div>
-            <div className="flex justify-between">
-              <span>Tax</span>
-              <span>Calculated at checkout</span>
+            <div className="flex justify-between text-sm">
+              <span className="text-taupe">Tax</span>
+              <span className="text-taupe">Calculated at checkout</span>
             </div>
           </div>
           <div className="flex justify-between text-lg font-bold mb-6">
-            <span>Total</span>
-            <span>${total.toFixed(2)}</span>
+            <span className="text-charcoal">Total</span>
+            <span className="text-charcoal">${total.toFixed(2)}</span>
           </div>
-          <Link href="/shop/checkout" className="btn-primary w-full py-3 text-center">
+          <Link href="/shop/checkout" className="btn btn-primary w-full py-3 flex items-center justify-center gap-2">
             Proceed to Checkout
+            <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link href="/shop/products" className="btn-secondary w-full py-3 text-center mt-2">
+          <Link href="/shop/products" className="btn btn-ghost w-full py-3 text-center mt-2 border border-blush">
             Continue Shopping
           </Link>
         </div>
