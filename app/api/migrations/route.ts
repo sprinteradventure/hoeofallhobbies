@@ -1,15 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // This is a temporary migration endpoint - should be protected in production
 // Only accessible with the correct API key
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing Supabase credentials');
-}
 
 // Migration SQL statements
 const INITIAL_SCHEMA = `
@@ -312,6 +307,17 @@ CREATE POLICY IF NOT EXISTS "Only admins can view audit logs"
 
 export async function POST(request: NextRequest) {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('Missing Supabase credentials');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
     // Check for authorization header with migration key
     const authHeader = request.headers.get('authorization');
     const expectedKey = process.env.MIGRATION_SECRET_KEY || 'run-migrations-secret-key';
@@ -329,9 +335,9 @@ export async function POST(request: NextRequest) {
 
     // Execute initial schema
     console.log('1️⃣  Executing schema migration...');
-    const { error: schemaError } = await supabase.rpc('exec_sql', {
+    const { error: schemaError } = await Promise.resolve(supabase.rpc('exec_sql', {
       sql: INITIAL_SCHEMA
-    }).catch(() => ({ error: null })); // Ignore RPC errors if function doesn't exist
+    })).catch(() => ({ error: null })); // Ignore RPC errors if function doesn't exist
 
     if (schemaError?.message?.includes('does not exist')) {
       // RPC function doesn't exist, try direct approach with postgres client
@@ -343,9 +349,9 @@ export async function POST(request: NextRequest) {
 
     // Execute RLS policies
     console.log('2️⃣  Executing RLS policies...');
-    const { error: rlsError } = await supabase.rpc('exec_sql', {
+    const { error: rlsError } = await Promise.resolve(supabase.rpc('exec_sql', {
       sql: RLS_POLICIES
-    }).catch(() => ({ error: null }));
+    })).catch(() => ({ error: null }));
 
     console.log('   ✅ RLS policies configured');
 

@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 export function HoeWordmark() {
   return (
     <div className="text-center">
@@ -14,45 +16,15 @@ export function HoeWordmark() {
 export function HoeMonogram() {
   return (
     <div className="flex items-center justify-center">
-      <svg
-        viewBox="0 0 200 140"
-        xmlns="http://www.w3.org/2000/svg"
-        className="w-20 h-28 md:w-24 md:h-32"
-      >
-        {/* Main bow center */}
-        <ellipse cx="100" cy="70" rx="20" ry="25" fill="#ead6ce" />
-
-        {/* Left bow loop */}
-        <path
-          d="M 80 70 Q 40 50 35 70 Q 40 90 60 85 Q 75 82 80 70"
-          fill="#ead6ce"
-        />
-
-        {/* Right bow loop */}
-        <path
-          d="M 120 70 Q 160 50 165 70 Q 160 90 140 85 Q 125 82 120 70"
-          fill="#ead6ce"
-        />
-
-        {/* Left ribbon tail */}
-        <path
-          d="M 50 85 Q 35 100 40 125 L 55 120"
-          fill="#ead6ce"
-          strokeWidth="1"
-          stroke="#ead6ce"
-        />
-
-        {/* Right ribbon tail */}
-        <path
-          d="M 150 85 Q 165 100 160 125 L 145 120"
-          fill="#ead6ce"
-          strokeWidth="1"
-          stroke="#ead6ce"
-        />
-
-        {/* Bow knot detail */}
-        <circle cx="100" cy="70" r="8" fill="#c9a876" opacity="0.6" />
-      </svg>
+      <Image
+        src="/images/branding-kit.png"
+        alt="Hoe of All Hobbies Monogram"
+        width={200}
+        height={200}
+        className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-full"
+        style={{ objectPosition: '72% 12%' }}
+        priority
+      />
     </div>
   );
 }
@@ -66,7 +38,7 @@ export function HoeBadge() {
         </div>
         <div className="text-3xl mb-1">🎀</div>
         <div className="text-xs uppercase tracking-widest text-charcoal font-lora">
-          Restunable Finds for Creative Vendors
+          Sustainable Finds for Creative Minds
         </div>
       </div>
     </div>
@@ -75,10 +47,16 @@ export function HoeBadge() {
 
 export function BotanicalDivider() {
   return (
-    <div className="flex items-center justify-center gap-4 py-4">
-      <div className="text-4xl text-gold">🌿</div>
+    <div className="flex items-center justify-center gap-4 py-6">
       <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold to-transparent"></div>
-      <div className="text-4xl text-gold">🌿</div>
+      <Image
+        src="/images/H.png"
+        alt="Decorative ribbon"
+        width={80}
+        height={40}
+        className="h-8 w-auto object-contain opacity-80"
+      />
+      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold to-transparent"></div>
     </div>
   );
 }
@@ -104,4 +82,49 @@ export function BotanicalElement() {
 
         {/* Right branches */}
         <path d="M 105 140 Q 125 135 130 155" />
-        <path d="M 110 110 Q 13
+        <path d="M 110 110 Q 135 105 145 125" />
+        <path d="M 108 80 Q 130 75 140 95" />
+        <path d="M 105 50 Q 125 45 135 65" />
+
+        {/* Small leaves */}
+        <ellipse cx="70" cy="155" rx="3" ry="5" fill="currentColor" opacity="0.4" />
+        <ellipse cx="55" cy="125" rx="3" ry="5" fill="currentColor" opacity="0.4" />
+        <ellipse cx="60" cy="95" rx="3" ry="5" fill="currentColor" opacity="0.4" />
+        <ellipse cx="65" cy="65" rx="3" ry="5" fill="currentColor" opacity="0.4" />
+        <ellipse cx="130" cy="155" rx="3" ry="5" fill="currentColor" opacity="0.4" />
+        <ellipse cx="145" cy="125" rx="3" ry="5" fill="currentColor" opacity="0.4" />
+        <ellipse cx="140" cy="95" rx="3" ry="5" fill="currentColor" opacity="0.4" />
+        <ellipse cx="135" cy="65" rx="3" ry="5" fill="currentColor" opacity="0.4" />
+      </g>
+    </svg>
+  );
+}
+
+export function BrandHeroImage() {
+  return (
+    <div className="relative w-full max-w-2xl mx-auto">
+      <Image
+        src="/images/branding-kit.png"
+        alt="Hoe of All Hobbies Branding"
+        width={1024}
+        height={1536}
+        className="w-full h-auto object-contain rounded-2xl"
+        priority
+      />
+    </div>
+  );
+}
+
+export function RibbonDivider() {
+  return (
+    <div className="flex items-center justify-center py-4">
+      <Image
+        src="/images/H.png"
+        alt="Decorative ribbon"
+        width={200}
+        height={100}
+        className="h-12 w-auto object-contain opacity-70"
+      />
+    </div>
+  );
+}
