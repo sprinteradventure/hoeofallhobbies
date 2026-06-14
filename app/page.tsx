@@ -1,90 +1,78 @@
 import Link from 'next/link'
-import { Search } from 'lucide-react'
+import { HoeMonogram, HoeWordmark, BotanicalDivider } from '@/components/BrandLogo'
 
 export default function Home() {
   return (
-    <div className="space-y-20">
+    <div className="space-y-0">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-brand-700 via-brand-600 to-purple-600 px-4 py-24">
+      <section className="relative overflow-hidden bg-gradient-to-b from-ivory via-blush to-white px-4 py-20 sm:py-28">
         <div className="mx-auto max-w-4xl text-center">
-          <h1 className="text-5xl font-bold text-white mb-6">
-            Your Marketplace for Craft & Hobby Supplies
-          </h1>
-          <p className="text-xl text-brand-100 mb-8">
-            Buy and sell new, used, and rare hobby supplies. Support creators. Find treasures.
+          {/* Brand Logo */}
+          <div className="mb-8 flex justify-center">
+            <HoeMonogram />
+          </div>
+
+          {/* Brand Wordmark */}
+          <div className="mb-8">
+            <HoeWordmark />
+          </div>
+
+          <BotanicalDivider />
+
+          <p className="text-lg sm:text-xl text-taupe mb-12 max-w-2xl mx-auto font-lora leading-relaxed">
+            Discover a curated marketplace for craft and hobby supplies. Buy and sell rare, vintage, and new finds from passionate creators and collectors worldwide.
           </p>
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/shop/products" className="btn-primary px-8 py-3 text-lg">
-              Start Shopping
+            <Link href="/categories" className="px-8 py-3 bg-gold text-white font-bold rounded-lg hover:bg-opacity-90 transition-all text-lg">
+              Browse Collections
             </Link>
-            <Link href="/seller/dashboard" className="btn-secondary px-8 py-3 text-lg">
-              Become a Seller
+            <Link href="/sell" className="px-8 py-3 border-2 border-gold text-gold font-bold rounded-lg hover:bg-gold hover:text-white transition-all text-lg">
+              Start Selling
             </Link>
           </div>
         </div>
+
+        {/* Decorative elements */}
+        <div className="absolute top-10 left-5 text-gold opacity-10 text-6xl">🌿</div>
+        <div className="absolute bottom-10 right-5 text-gold opacity-10 text-6xl">🌿</div>
       </section>
 
-      {/* Quick Search */}
-      <section className="px-4 py-16">
-        <div className="mx-auto max-w-2xl">
-          <h2 className="text-3xl font-bold text-center mb-8">Find What You Love</h2>
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-neutral-400" />
-              <input
-                type="search"
-                placeholder="Search supplies..."
-                className="input w-full pl-10"
-              />
-            </div>
-            <button className="btn-primary px-6">Search</button>
+      {/* Why Choose Us Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="font-cormorant text-4xl sm:text-5xl font-bold text-charcoal mb-2">
+              Why Hoe of All Hobbies?
+            </h2>
+            <div className="h-1 w-16 bg-gold mx-auto mt-4"></div>
           </div>
-        </div>
-      </section>
 
-      {/* Categories */}
-      <section className="px-4 py-16 bg-neutral-100">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl font-bold text-center mb-12">Shop by Category</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              'Knitting',
-              'Painting',
-              'Jewelry',
-              'Woodworking',
-              'Gardening',
-              'Sewing'
-            ].map((category) => (
-              <Link
-                key={category}
-                href={`/shop/products?category=${category.toLowerCase()}`}
-                className="card text-center hover:shadow-md transition-shadow"
-              >
-                <p className="font-semibold">{category}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="px-4 py-16">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl font-bold text-center mb-12">Why Choose Us</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { title: 'Safe & Secure', description: 'Secure payments and buyer protection' },
-              { title: 'Verified Sellers', description: 'Trusted creators and hobbyists' },
-              { title: 'Fair Pricing', description: 'Competitive prices from our community' }
-            ].map((feature) => (
-              <div key={feature.title} className="card text-center">
-                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-neutral-600">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    </div>
-  )
-}
+              {
+                title: '🌱 Sustainable',
+                description: 'Give vintage and second-hand supplies a new home. Reduce waste, support sustainability.'
+              },
+              {
+                title: '💎 Quality Finds',
+                description: 'Discover rare, vintage, and hard-to-find supplies you won\'t find anywhere else.'
+              },
+              {
+                title: '🤝 Community Driven',
+                description: 'Connect with fellow crafters and hobbyists. Support creative makers worldwide.'
+              },
+              {
+                title: '✨ Fair Pricing',
+                description: 'Transparent pricing model: sellers keep 80%, we take 20% to keep the marketplace running.'
+              },
+              {
+                title: '🔒 Secure Transactions',
+                description: 'Stripe-powered payments with buyer and seller protection for peace of mind.'
+              },
+              {
+                title: '📦 Easy Shipping',
+                description: 'Integrated shipping labels and tracking for smooth transactions.'
+              }
+            ].map((item, index) => (
+              <div key={index} className="bg-ivory rounded-xl p-8 bor
