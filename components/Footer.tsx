@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import Image from 'next/image'
+import { SmallMonogram } from './BrandLogo'
 
 export default function Footer() {
   return (
@@ -8,16 +8,7 @@ export default function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 overflow-hidden rounded-full border border-gold/30">
-                <Image
-                  src="/images/branding-kit.png"
-                  alt="Hoe of All Hobbies"
-                  width={60}
-                  height={60}
-                  className="w-full h-full object-cover"
-                  style={{ objectPosition: '72% 12%' }}
-                />
-              </div>
+              <SmallMonogram />
               <span className="font-cormorant font-bold text-lg tracking-wide">Hoe of All Hobbies</span>
             </div>
             <p className="text-sm text-taupe font-lora leading-relaxed">
@@ -63,13 +54,7 @@ export default function Footer() {
         </div>
         <div className="border-t border-blush pt-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Image
-              src="/images/H.png"
-              alt="Decorative ribbon"
-              width={60}
-              height={30}
-              className="h-5 w-auto object-contain opacity-50"
-            />
+            <SmallMonogram />
           </div>
           <p className="text-taupe text-sm font-lora">
             &copy; 2026 Hoe of All Hobbies. All rights reserved.

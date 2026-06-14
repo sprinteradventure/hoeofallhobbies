@@ -1,28 +1,27 @@
 import Link from 'next/link'
-import { HoeMonogram, HoeWordmark, BotanicalDivider, RibbonDivider } from '@/components/BrandLogo'
-import Image from 'next/image'
+import { HoeWordmark, RibbonDivider, BotanicalDivider, BrandHeroImage } from '@/components/BrandLogo'
 
 export default function Home() {
   return (
     <div className="space-y-0">
-      {/* Hero Section with Branding Kit */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-ivory via-blush to-cream px-4 py-16 sm:py-24">
         <div className="mx-auto max-w-4xl text-center">
-          {/* Branding Kit Hero Image */}
-          <div className="mb-8 flex justify-center">
-            <div className="relative w-full max-w-lg">
-              <Image
-                src="/images/branding-kit.png"
-                alt="Hoe of All Hobbies Branding"
-                width={1024}
-                height={1536}
-                className="w-full h-auto max-h-[500px] object-contain object-top rounded-2xl shadow-lg"
-                priority
+          {/* Hero Logo Artwork */}
+          <div className="mb-4 flex justify-center">
+            <div className="mx-auto max-w-md">
+              <img
+                src="/images/logo-of-all.png"
+                alt="of all — decorative logo artwork"
+                className="w-full h-auto object-contain"
               />
             </div>
           </div>
 
-          <RibbonDivider />
+          {/* Wordmark */}
+          <HoeWordmark />
+
+          <BotanicalDivider />
 
           <p className="text-lg sm:text-xl text-taupe mb-12 max-w-2xl mx-auto leading-relaxed font-lora">
             Discover a curated marketplace for craft and hobby supplies. Buy and sell rare, vintage, and new finds from passionate creators and collectors worldwide.
@@ -111,7 +110,6 @@ export default function Home() {
               <div key={index} className="bg-ivory rounded-xl p-8 border border-blush hover:border-gold hover:shadow-lg transition-all duration-300">
                 <h3 className="text-2xl font-bold text-charcoal mb-3 font-cormorant tracking-wide">
                   {item.title}
-              
                 </h3>
                 <p className="text-taupe font-lora leading-relaxed">
                   {item.description}
@@ -125,15 +123,7 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-ivory to-blush">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="mb-6">
-            <Image
-              src="/images/H.png"
-              alt="Decorative ribbon"
-              width={120}
-              height={60}
-              className="h-10 w-auto mx-auto object-contain opacity-60"
-            />
-          </div>
+          <RibbonDivider />
           <h2 className="text-3xl sm:text-4xl font-bold text-charcoal mb-4 font-cormorant tracking-wide">
             Ready to Start?
           </h2>

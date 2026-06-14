@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { ShoppingCart, Menu, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
-import Image from 'next/image'
+import { SmallMonogram } from './BrandLogo'
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -14,17 +14,7 @@ export default function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-14 h-14 flex items-center justify-center -my-1 overflow-hidden rounded-full border border-gold/30">
-              <Image
-                src="/images/branding-kit.png"
-                alt="Hoe of All Hobbies Monogram"
-                width={120}
-                height={120}
-                className="w-full h-full object-cover"
-                style={{ objectPosition: '72% 12%' }}
-                priority
-              />
-            </div>
+            <SmallMonogram />
             <span className="font-cormorant text-xl font-bold text-charcoal hidden sm:inline tracking-wide">
               Hoe of All Hobbies
             </span>
