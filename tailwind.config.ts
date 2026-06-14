@@ -9,6 +9,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        ivory: '#f5f1ed',
+        blush: '#ead6ce',
+        taupe: '#9b8a7e',
+        charcoal: '#3d4451',
+        'french-blue': '#4a5f7f',
+        gold: '#c9a876',
         brand: {
           50: '#f5f3ff',
           100: '#ede9fe',
@@ -23,5 +29,4 @@ const config: Config = {
           100: '#f5f5f5',
           200: '#e5e5e5',
           300: '#d4d4d4',
-          400: '#a3a3a3',
-          6
+         

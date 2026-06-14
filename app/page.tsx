@@ -4,22 +4,19 @@ import { HoeMonogram, HoeWordmark, BotanicalDivider } from '@/components/BrandLo
 export default function Home() {
   return (
     <div className="space-y-0">
-      {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-ivory via-blush to-white px-4 py-20 sm:py-28">
         <div className="mx-auto max-w-4xl text-center">
-          {/* Brand Logo */}
           <div className="mb-8 flex justify-center">
             <HoeMonogram />
           </div>
 
-          {/* Brand Wordmark */}
           <div className="mb-8">
             <HoeWordmark />
           </div>
 
           <BotanicalDivider />
 
-          <p className="text-lg sm:text-xl text-taupe mb-12 max-w-2xl mx-auto font-lora leading-relaxed">
+          <p className="text-lg sm:text-xl text-taupe mb-12 max-w-2xl mx-auto leading-relaxed">
             Discover a curated marketplace for craft and hobby supplies. Buy and sell rare, vintage, and new finds from passionate creators and collectors worldwide.
           </p>
 
@@ -33,16 +30,14 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Decorative elements */}
         <div className="absolute top-10 left-5 text-gold opacity-10 text-6xl">🌿</div>
         <div className="absolute bottom-10 right-5 text-gold opacity-10 text-6xl">🌿</div>
       </section>
 
-      {/* Why Choose Us Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="font-cormorant text-4xl sm:text-5xl font-bold text-charcoal mb-2">
+            <h2 className="text-4xl sm:text-5xl font-bold text-charcoal mb-2">
               Why Hoe of All Hobbies?
             </h2>
             <div className="h-1 w-16 bg-gold mx-auto mt-4"></div>
@@ -75,4 +70,7 @@ export default function Home() {
                 description: 'Integrated shipping labels and tracking for smooth transactions.'
               }
             ].map((item, index) => (
-              <div key={index} className="bg-ivory rounded-xl p-8 bor
+              <div key={index} className="bg-ivory rounded-xl p-8 border-2 border-blush hover:border-gold hover:shadow-lg transition-all duration-300">
+                <h3 className="text-2xl font-bold text-charcoal mb-3">
+                  {item.title}
+ 

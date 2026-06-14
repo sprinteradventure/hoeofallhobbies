@@ -104,7 +104,7 @@ function ShopContent() {
 
               <div className="space-y-2">
                 <Link href="/shop" className="block">
-                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-blush transition-colors text-charcoal font-lora">
+                  <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-blush transition-colors text-charcoal">
                     All Products
                   </button>
                 </Link>
@@ -117,7 +117,7 @@ function ShopContent() {
                           expandedCategory === category.slug ? null : category.slug
                         )
                       }
-                      className="w-full text-left px-4 py-2 rounded-lg hover:bg-blush transition-colors text-charcoal font-lora flex items-center justify-between"
+                      className="w-full text-left px-4 py-2 rounded-lg hover:bg-blush transition-colors text-charcoal flex items-center justify-between"
                     >
                       {category.name}
                       {expandedCategory === category.slug && (
