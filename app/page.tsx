@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { HoeWordmark, RibbonDivider, BotanicalDivider, BrandHeroImage } from '@/components/BrandLogo'
+import { HoeWordmark, BotanicalDivider } from '@/components/BrandLogo'
 
 export default function Home() {
   return (
@@ -123,7 +123,7 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-ivory to-blush">
         <div className="max-w-3xl mx-auto text-center">
-          <RibbonDivider />
+          <div className="h-px w-24 bg-gold mx-auto mb-8"></div>
           <h2 className="text-3xl sm:text-4xl font-bold text-charcoal mb-4 font-cormorant tracking-wide">
             Ready to Start?
           </h2>

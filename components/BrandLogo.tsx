@@ -2,24 +2,11 @@ import Image from 'next/image'
 
 export function HoeWordmark() {
   return (
-    <div className="text-center space-y-2">
-      <div className="font-cormorant text-4xl md:text-5xl font-bold text-charcoal tracking-wider">
-        HOE
+    <div className="text-center space-y-3">
+      <div className="font-cormorant text-3xl md:text-4xl lg:text-5xl font-bold text-charcoal tracking-wider">
+        HOE <span className="italic font-normal text-gold">of all</span> HOBBIES
       </div>
-      <div className="mx-auto max-w-xs md:max-w-sm">
-        <Image
-          src="/images/logo-of-all.png"
-          alt="of all"
-          width={400}
-          height={125}
-          className="w-full h-auto object-contain"
-          priority
-        />
-      </div>
-      <div className="font-cormorant text-4xl md:text-5xl font-bold text-charcoal tracking-wider">
-        HOBBIES
-      </div>
-      <div className="text-sm md:text-base uppercase tracking-widest text-taupe font-lora pt-2">
+      <div className="text-sm md:text-base uppercase tracking-widest text-taupe font-lora">
         Sustainable Finds for Creative Minds
       </div>
     </div>
