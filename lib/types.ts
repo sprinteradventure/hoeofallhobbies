@@ -44,7 +44,7 @@ export interface Order {
   seller_id: string
   product_id: string
   quantity: number
-  status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'completed' | 'disputed' | 'refunded' | 'cancelled'
+  status: 'pending' | 'payment_pending' | 'paid' | 'shipped' | 'delivered' | 'completed' | 'disputed' | 'refunded' | 'cancelled'
   total_price: number
   shipping_address?: Record<string, unknown>
   tracking_number?: string
@@ -73,4 +73,14 @@ export interface CartItem {
   product?: Product
   created_at: string
   updated_at: string
+}
+
+export interface OrderItem {
+  id: string
+  order_id: string
+  product_id: string
+  quantity: number
+  price_at_purchase: number
+  created_at: string
+  product?: Product
 }

@@ -27,12 +27,13 @@ export default function ProductsPageWrapper() {
 function ProductsPage() {
   const searchParams = useSearchParams()
   const urlCategory = searchParams.get('category') || ''
+  const urlSubcategory = searchParams.get('subcategory') || ''
   
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(urlCategory)
-  const [selectedSubcategory, setSelectedSubcategory] = useState('')
+  const [selectedSubcategory, setSelectedSubcategory] = useState(urlSubcategory)
   const [showFilters, setShowFilters] = useState(false)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(urlCategory)
 
@@ -41,7 +42,8 @@ function ProductsPage() {
       setSelectedCategory(urlCategory)
       setExpandedCategory(urlCategory)
     }
-  }, [urlCategory])
+    setSelectedSubcategory(urlSubcategory)
+  }, [urlCategory, urlSubcategory])
 
   useEffect(() => {
     fetchProducts()

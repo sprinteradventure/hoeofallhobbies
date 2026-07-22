@@ -207,8 +207,8 @@ export default function SellerDashboard() {
             <p className="text-sm text-taupe mb-4">
               Configure your shipping labels and carrier preferences here when you're ready.
             </p>
-            <Link href="#" className="btn btn-ghost w-full py-2 border border-blush text-sm">
-              Setup Shipping Labels
+            <Link href="/seller/orders" className="btn btn-ghost w-full py-2 border border-blush text-sm">
+              View Orders to Ship
             </Link>
           </div>
         </div>

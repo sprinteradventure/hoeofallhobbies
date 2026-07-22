@@ -1,6 +1,50 @@
 import Link from 'next/link'
 import { SmallMonogram } from './BrandLogo'
 
+const SHOP_LINKS = [
+  { href: '/shop/products', label: 'All Products' },
+  { href: '/categories', label: 'Browse Categories' },
+  { href: '/shop/cart', label: 'Cart' },
+]
+
+const SELL_LINKS = [
+  { href: '/sell', label: 'Start Selling' },
+  { href: '/seller/dashboard', label: 'Seller Dashboard' },
+  { href: '/seller/orders', label: 'Seller Orders' },
+]
+
+const ACCOUNT_LINKS = [
+  { href: '/auth/login', label: 'Sign In' },
+  { href: '/auth/signup', label: 'Create Account' },
+  { href: '/account', label: 'My Account' },
+  { href: '/shop/orders', label: 'My Orders' },
+]
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string
+  links: { href: string; label: string }[]
+}) {
+  return (
+    <div>
+      <h3 className="font-cormorant font-bold text-lg mb-4 tracking-wide">{title}</h3>
+      {links.map((link, i) => (
+        <Link
+          key={link.href + link.label}
+          href={link.href}
+          className={`block text-taupe hover:text-gold text-sm font-lora transition-colors ${
+            i < links.length - 1 ? 'mb-2' : ''
+          }`}
+        >
+          {link.label}
+        </Link>
+      ))}
+    </div>
+  )
+}
+
 export default function Footer() {
   return (
     <footer className="border-t border-blush bg-ivory text-charcoal mt-0">
@@ -15,42 +59,9 @@ export default function Footer() {
               Sustainable finds for creative minds. A curated marketplace for craft and hobby supplies.
             </p>
           </div>
-          <div>
-            <h3 className="font-cormorant font-bold text-lg mb-4 tracking-wide">About</h3>
-            <Link href="#" className="block text-taupe hover:text-gold text-sm mb-2 font-lora transition-colors">
-              About Us
-            </Link>
-            <Link href="#" className="block text-taupe hover:text-gold text-sm mb-2 font-lora transition-colors">
-              Contact
-            </Link>
-            <Link href="#" className="block text-taupe hover:text-gold text-sm font-lora transition-colors">
-              Blog
-            </Link>
-          </div>
-          <div>
-            <h3 className="font-cormorant font-bold text-lg mb-4 tracking-wide">Support</h3>
-            <Link href="#" className="block text-taupe hover:text-gold text-sm mb-2 font-lora transition-colors">
-              Help Center
-            </Link>
-            <Link href="#" className="block text-taupe hover:text-gold text-sm mb-2 font-lora transition-colors">
-              Safety Tips
-            </Link>
-            <Link href="#" className="block text-taupe hover:text-gold text-sm font-lora transition-colors">
-              Report Item
-            </Link>
-          </div>
-          <div>
-            <h3 className="font-cormorant font-bold text-lg mb-4 tracking-wide">Policies</h3>
-            <Link href="#" className="block text-taupe hover:text-gold text-sm mb-2 font-lora transition-colors">
-              Terms of Service
-            </Link>
-            <Link href="#" className="block text-taupe hover:text-gold text-sm mb-2 font-lora transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="#" className="block text-taupe hover:text-gold text-sm font-lora transition-colors">
-              Cookie Policy
-            </Link>
-          </div>
+          <FooterColumn title="Shop" links={SHOP_LINKS} />
+          <FooterColumn title="Sell" links={SELL_LINKS} />
+          <FooterColumn title="Account" links={ACCOUNT_LINKS} />
         </div>
         <div className="border-t border-blush pt-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">

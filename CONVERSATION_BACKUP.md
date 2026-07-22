@@ -59,7 +59,7 @@ Supabase:
 - Project URL: https://tgskrunjdmoyjgrieuzg.supabase.co
 - Project ID: tgskrunjdmoyjgrieuzg
 - Anon Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnc2tydW5qZG1veWpncmlldXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwODU2MzYsImV4cCI6MjA5NTY2MTYzNn0.U6khTi7yYNrH2fRkmN1nMaIxOGgR2V_OuRRckvFko20
-- Service Role Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnc2tydW5qZG1veWpncmlldXpnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDA4NTYzNiwiZXhwIjoyMDk1NjYxNjM2fQ.VRaqiHZF7l7VozolLHw8rpdXHm_apOgAopmnEeQB4BU
+- Service Role Key: [REDACTED — rotate this key]
 
 Stripe:
 - Publishable Key: mk_1TcWtuGzFbH24pEYYCNpZGpz

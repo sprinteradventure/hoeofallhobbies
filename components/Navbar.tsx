@@ -34,7 +34,7 @@ export default function Navbar() {
                 <Link href="/categories" className="block px-4 py-2 text-charcoal hover:bg-ivory transition-colors font-lora">
                   Browse Categories
                 </Link>
-                <Link href="/shop" className="block px-4 py-2 text-charcoal hover:bg-ivory transition-colors font-lora">
+                <Link href="/shop/products" className="block px-4 py-2 text-charcoal hover:bg-ivory transition-colors font-lora">
                   All Products
                 </Link>
               </div>
@@ -46,7 +46,7 @@ export default function Navbar() {
             <Link href="/account" className="text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider">
               Account
             </Link>
-            <Link href="/cart" className="px-5 py-2.5 bg-gold text-white font-bold rounded-lg hover:bg-opacity-90 transition-all flex items-center gap-2 font-cormorant text-sm tracking-wider">
+            <Link href="/shop/cart" className="px-5 py-2.5 bg-gold text-white font-bold rounded-lg hover:bg-opacity-90 transition-all flex items-center gap-2 font-cormorant text-sm tracking-wider">
               <ShoppingCart className="h-4 w-4" />
               Cart
             </Link>
@@ -71,7 +71,7 @@ export default function Navbar() {
                 <Link href="/categories" className="block py-2 px-2 text-taupe hover:bg-ivory rounded transition-colors text-sm font-lora">
                   Browse Categories
                 </Link>
-                <Link href="/shop" className="block py-2 px-2 text-taupe hover:bg-ivory rounded transition-colors text-sm font-lora">
+                <Link href="/shop/products" className="block py-2 px-2 text-taupe hover:bg-ivory rounded transition-colors text-sm font-lora">
                   All Products
                 </Link>
               </div>
@@ -82,7 +82,7 @@ export default function Navbar() {
             <Link href="/account" className="block py-2 px-2 text-charcoal hover:bg-ivory rounded transition-colors font-lora">
               Account
             </Link>
-            <Link href="/cart" className="block py-2 px-2 text-charcoal hover:bg-ivory rounded transition-colors font-lora">
+            <Link href="/shop/cart" className="block py-2 px-2 text-charcoal hover:bg-ivory rounded transition-colors font-lora">
               Cart
             </Link>
           </div>

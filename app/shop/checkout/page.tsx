@@ -63,7 +63,22 @@ export default function CheckoutPage() {
         sellerOrders.get(sellerId)!.push(item)
       })
 
-      // Create order records
+      // Decrement stock atomically per item BEFORE creating orders. The RPC
+      // refuses to oversell, so a failure here aborts the whole checkout.
+      for (const item of cartItems) {
+        const { data: decremented, error: stockError } = await supabase.rpc(
+          'decrement_product_stock',
+          { p_product_id: item.product_id, p_quantity: item.quantity }
+        )
+        if (stockError) throw stockError
+        if (!decremented) {
+          throw new Error(
+            `Not enough stock for "${(item.product as any).title}". Please adjust your cart.`
+          )
+        }
+      }
+
+      // Create order records + one order_items row per cart item
       for (const [sellerId, items] of sellerOrders.entries()) {
         const totalPrice = items.reduce((sum, item) => {
           return sum + ((item.product as any).price * item.quantity)
@@ -74,15 +89,27 @@ export default function CheckoutPage() {
           .insert({
             buyer_id: user.id,
             seller_id: sellerId,
-            product_id: items[0].product_id,
+            product_id: items[0].product_id, // legacy single-product column; real line items live in order_items
             quantity: items.reduce((sum, item) => sum + item.quantity, 0),
             total_price: totalPrice,
             shipping_address: shippingAddress,
             status: 'pending',
           })
           .select()
+          .single()
 
         if (orderError) throw orderError
+
+        const { error: itemsError } = await supabase.from('order_items').insert(
+          items.map(item => ({
+            order_id: orderData.id,
+            product_id: item.product_id,
+            quantity: item.quantity,
+            price_at_purchase: (item.product as any).price,
+          }))
+        )
+
+        if (itemsError) throw itemsError
       }
 
       // Clear cart
@@ -91,7 +118,7 @@ export default function CheckoutPage() {
       router.push('/shop/orders')
     } catch (err) {
       console.error('Checkout error:', err)
-      alert('Checkout failed. Please try again.')
+      alert(err instanceof Error ? err.message : 'Checkout failed. Please try again.')
     } finally {
       setProcessing(false)
     }
