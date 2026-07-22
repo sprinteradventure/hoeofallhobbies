@@ -41,6 +41,7 @@ export default function OrdersPage() {
 
   const statusConfig: Record<string, { color: string, bg: string, label: string }> = {
     pending: { color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Pending' },
+    payment_pending: { color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Awaiting Payment' },
     paid: { color: 'text-blue-600', bg: 'bg-blue-50', label: 'Paid' },
     shipped: { color: 'text-purple-600', bg: 'bg-purple-50', label: 'Shipped' },
     delivered: { color: 'text-green-600', bg: 'bg-green-50', label: 'Delivered' },

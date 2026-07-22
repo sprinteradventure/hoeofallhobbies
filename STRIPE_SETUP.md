@@ -1,48 +1,51 @@
-# Stripe Setup — Exact Steps for Tonight
+# Stripe Payments — Status: LIVE
 
-The code is prepared for Stripe but runs in the current "pending order" mode
-until you add the keys. Nothing payments-related changes until you do.
+Stripe checkout is **active**. Setup was completed 2026-06 (keys configured in
+Vercel for production + preview, webhook created).
 
-## 1. Add these env vars in Vercel (Project → Settings → Environment Variables)
+## What's live
 
-| Variable | Where to get it | Notes |
-|---|---|---|
-| `STRIPE_SECRET_KEY` | Stripe Dashboard → Developers → API keys → **Secret key** (`sk_live_...`, or `sk_test_...` while testing) | Server-only, never expose |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Same page → **Publishable key** (`pk_live_...` / `pk_test_...`) | Safe for the browser |
-| `STRIPE_WEBHOOK_SECRET` | Stripe Dashboard → Developers → Webhooks → add endpoint (step 2 below) → **Signing secret** (`whsec_...`) | Server-only |
-| `NEXT_PUBLIC_APP_URL` | Already set — make sure it is your production URL, e.g. `https://hoe-of-all-hobbies.vercel.app` (or the custom domain once connected) | Used for Stripe success/cancel URLs and auth redirects |
+- **Checkout** — `app/shop/checkout/page.tsx` POSTs to `/api/checkout`, which
+  authenticates the buyer, loads the cart **server-side** (client prices are
+  never trusted), atomically decrements stock, creates one order per seller
+  with status `payment_pending` plus `order_items` rows, then returns a
+  Stripe-hosted Checkout URL the browser redirects to.
+- **Webhook** — `app/api/webhooks/stripe/route.ts` at
+  `https://hoe-of-all-hobbies.vercel.app/api/webhooks/stripe`, listening for
+  `checkout.session.completed`. On payment it verifies the Stripe signature,
+  flips the order(s) to `paid`, records the payment intent, and clears the
+  buyer's cart.
+- **Commission** — 5% platform fee is stored on each order in
+  `orders.platform_fee` (migration `006_platform_fee.sql`) for bookkeeping.
+  All payments settle into the platform's Stripe account (no Stripe Connect);
+  sellers are paid out manually later.
+- **Env vars** (all read from `process.env`, never hardcoded):
+  `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`,
+  `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL`,
+  `SUPABASE_SERVICE_ROLE_KEY`.
+- **Success / cancel URLs** — success: `/shop/orders?session_id=...`,
+  cancel: `/shop/cart`.
 
-Also confirm `SUPABASE_SERVICE_ROLE_KEY` is set in Vercel (the checkout API,
-webhook, and admin stats route all use it). **Rotate it first** — the old one
-was committed to the repo (see the audit report).
+## Remaining owner actions
 
-## 2. Create the webhook endpoint in Stripe
+1. **Complete Stripe account review/activation** in the Stripe dashboard so
+   live-mode payouts are enabled (business details, bank account).
+2. **Test a real purchase end-to-end** on production: signup → add to cart →
+   checkout → pay (use Stripe's test card 4242 4242 4242 4242 in test mode,
+   or a small live charge you refund) → confirm the order shows `paid` in
+   `/shop/orders` and the Stripe dashboard.
+3. **Apply migration 006** (`supabase/migrations/006_platform_fee.sql`) in the
+   Supabase SQL editor if not already applied — checkout inserts
+   `platform_fee` and will fail without the column.
+4. Confirm `NEXT_PUBLIC_APP_URL` in Vercel matches the production domain so
+   Stripe success/cancel redirects land correctly (code falls back to
+   `https://hoe-of-all-hobbies.vercel.app`).
 
-Stripe Dashboard → Developers → Webhooks → **Add endpoint**:
+## Notes
 
-- **URL:** `https://<your-domain>/api/webhooks/stripe`
-- **Events:** `checkout.session.completed`
-
-Copy the endpoint's **Signing secret** into `STRIPE_WEBHOOK_SECRET` in Vercel.
-
-## 3. Apply the new database migrations (Supabase SQL editor)
-
-Run these two files in order:
-
-1. `supabase/migrations/003_order_items.sql` — order line items + stock decrement
-2. `supabase/migrations/004_payment_pending_status.sql` — adds the `payment_pending` order status
-
-## 4. Activate the Stripe checkout flow
-
-Search the codebase for `TODO(owner)` / `TODO(stripe)`:
-
-- `app/api/checkout/route.ts` — uncomment the Stripe Checkout Session block
-  (it creates orders as `payment_pending` and returns the Stripe session URL).
-- `app/shop/checkout/page.tsx` — switch the Place Order button to POST to
-  `/api/checkout` (with the user's access token) and redirect to the returned
-  Stripe URL, instead of inserting orders directly.
-- `app/api/webhooks/stripe/route.ts` — already live; it flips orders to
-  `paid` once the webhook secret is set.
-
-**Do not** add any platform-fee / commission split in Stripe code — the
-commission rate is still an open owner decision (5% vs 20%).
+- Buyers who abandon the Stripe-hosted checkout leave orders in
+  `payment_pending` with stock already decremented; a future cleanup job can
+  cancel stale `payment_pending` orders and restore stock.
+- If `STRIPE_SECRET_KEY` is ever missing, `/api/checkout` returns 501
+  `STRIPE_NOT_CONFIGURED` and the buyer sees a graceful "payments are being
+  set up" message.

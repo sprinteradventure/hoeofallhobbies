@@ -46,6 +46,7 @@ export interface Order {
   quantity: number
   status: 'pending' | 'payment_pending' | 'paid' | 'shipped' | 'delivered' | 'completed' | 'disputed' | 'refunded' | 'cancelled'
   total_price: number
+  platform_fee?: number
   shipping_address?: Record<string, unknown>
   tracking_number?: string
   stripe_payment_intent_id: string

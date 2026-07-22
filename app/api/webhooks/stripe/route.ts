@@ -4,14 +4,15 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 export const dynamic = 'force-dynamic'
 
 // ============================================================================
-// STRIPE WEBHOOK — PREPARED STUB (not yet live)
+// STRIPE WEBHOOK — LIVE
 // ----------------------------------------------------------------------------
-// Listens for checkout.session.completed and flips orders from
-// 'payment_pending' to 'paid'. Gated behind STRIPE_WEBHOOK_SECRET so it is
-// inert until the owner creates the webhook endpoint in the Stripe dashboard.
+// Listens for checkout.session.completed, flips the order(s) from
+// 'payment_pending' to 'paid', records the payment intent, and clears the
+// buyer's cart. Signature is verified with STRIPE_WEBHOOK_SECRET; unverified
+// requests are rejected with 400.
 //
-// Stripe dashboard webhook to create (see STRIPE_SETUP.md):
-//   URL:    https://<production domain>/api/webhooks/stripe
+// Configured endpoint (see STRIPE_SETUP.md):
+//   URL:    https://hoe-of-all-hobbies.vercel.app/api/webhooks/stripe
 //   Events: checkout.session.completed
 // ============================================================================
 
@@ -58,9 +59,12 @@ export async function POST(request: NextRequest) {
 
         if (error) throw error
 
-        // TODO(stripe): decrement stock here if checkout moves to a
-        // reserve-on-payment model; clear the buyer's cart here as well
-        // (session.metadata.buyer_id) once the client stops doing it.
+        // Payment succeeded — clear the buyer's cart (stock was already
+        // decremented when the checkout session was created).
+        const buyerId = session.metadata?.buyer_id
+        if (buyerId) {
+          await admin.from('cart_items').delete().eq('user_id', buyerId)
+        }
       }
     }
 

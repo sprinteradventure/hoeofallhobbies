@@ -70,6 +70,7 @@ export default function SellerOrdersPage() {
 
   const statusConfig: Record<string, { color: string; bg: string; label: string; icon: any }> = {
     pending: { color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Pending', icon: Package },
+    payment_pending: { color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Awaiting Payment', icon: Package },
     paid: { color: 'text-blue-600', bg: 'bg-blue-50', label: 'Paid', icon: CheckCircle },
     shipped: { color: 'text-purple-600', bg: 'bg-purple-50', label: 'Shipped', icon: Truck },
     delivered: { color: 'text-green-600', bg: 'bg-green-50', label: 'Delivered', icon: CheckCircle },

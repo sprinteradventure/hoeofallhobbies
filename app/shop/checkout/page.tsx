@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
-import { CartItem, Order } from '@/lib/types'
+import { CartItem } from '@/lib/types'
 import { Truck, CreditCard, MapPin, Package, ChevronRight, Shield } from 'lucide-react'
 
 export default function CheckoutPage() {
@@ -19,6 +19,7 @@ export default function CheckoutPage() {
   const [zip, setZip] = useState('')
   const [phone, setPhone] = useState('')
   const [shippingMethod, setShippingMethod] = useState('standard')
+  const [checkoutError, setCheckoutError] = useState('')
 
   useEffect(() => {
     fetchCart()
@@ -46,79 +47,45 @@ export default function CheckoutPage() {
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault()
     setProcessing(true)
+    setCheckoutError('')
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
 
       const shippingAddress = { fullName, address, city, state, zip, phone, method: shippingMethod }
 
-      // Create orders for each seller (grouped by seller)
-      const sellerOrders = new Map<string, CartItem[]>()
-      cartItems.forEach(item => {
-        const sellerId = (item.product as any).seller_id
-        if (!sellerOrders.has(sellerId)) {
-          sellerOrders.set(sellerId, [])
-        }
-        sellerOrders.get(sellerId)!.push(item)
+      // The server loads the cart, checks/decrements stock, creates
+      // payment_pending orders + order_items, and returns a Stripe Checkout
+      // URL. Prices are computed server-side from the database.
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ shippingAddress }),
       })
 
-      // Decrement stock atomically per item BEFORE creating orders. The RPC
-      // refuses to oversell, so a failure here aborts the whole checkout.
-      for (const item of cartItems) {
-        const { data: decremented, error: stockError } = await supabase.rpc(
-          'decrement_product_stock',
-          { p_product_id: item.product_id, p_quantity: item.quantity }
+      const data = await res.json().catch(() => ({}))
+
+      if (res.status === 501 && data?.code === 'STRIPE_NOT_CONFIGURED') {
+        setCheckoutError(
+          'Online payments are being set up right now. Please check back shortly — your cart is saved.'
         )
-        if (stockError) throw stockError
-        if (!decremented) {
-          throw new Error(
-            `Not enough stock for "${(item.product as any).title}". Please adjust your cart.`
-          )
-        }
+        return
       }
 
-      // Create order records + one order_items row per cart item
-      for (const [sellerId, items] of sellerOrders.entries()) {
-        const totalPrice = items.reduce((sum, item) => {
-          return sum + ((item.product as any).price * item.quantity)
-        }, 0)
-
-        const { data: orderData, error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            buyer_id: user.id,
-            seller_id: sellerId,
-            product_id: items[0].product_id, // legacy single-product column; real line items live in order_items
-            quantity: items.reduce((sum, item) => sum + item.quantity, 0),
-            total_price: totalPrice,
-            shipping_address: shippingAddress,
-            status: 'pending',
-          })
-          .select()
-          .single()
-
-        if (orderError) throw orderError
-
-        const { error: itemsError } = await supabase.from('order_items').insert(
-          items.map(item => ({
-            order_id: orderData.id,
-            product_id: item.product_id,
-            quantity: item.quantity,
-            price_at_purchase: (item.product as any).price,
-          }))
-        )
-
-        if (itemsError) throw itemsError
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.error || 'Checkout failed. Please try again.')
       }
 
-      // Clear cart
-      await supabase.from('cart_items').delete().eq('user_id', user.id)
-
-      router.push('/shop/orders')
+      // Redirect to Stripe-hosted checkout. The cart is cleared by the
+      // webhook once payment succeeds.
+      window.location.href = data.url
     } catch (err) {
       console.error('Checkout error:', err)
-      alert(err instanceof Error ? err.message : 'Checkout failed. Please try again.')
+      setCheckoutError(err instanceof Error ? err.message : 'Checkout failed. Please try again.')
     } finally {
       setProcessing(false)
     }
@@ -265,14 +232,19 @@ export default function CheckoutPage() {
                   <p className="font-semibold text-charcoal">Secure Payment</p>
                 </div>
                 <p className="text-sm text-taupe mb-4">
-                  Stripe integration is coming soon. For now, orders are placed in "pending" status and the seller will coordinate payment directly. You will receive an email with payment instructions.
+                  You&apos;ll be redirected to Stripe&apos;s secure checkout to complete payment. Your order is confirmed once payment succeeds.
                 </p>
+                {checkoutError && (
+                  <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
+                    {checkoutError}
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={processing}
                   className="btn btn-primary w-full py-3.5"
                 >
-                  {processing ? 'Processing Order...' : 'Place Order'}
+                  {processing ? 'Redirecting to Payment...' : 'Place Order'}
                 </button>
               </div>
             </div>

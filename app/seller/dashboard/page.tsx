@@ -77,6 +77,7 @@ export default function SellerDashboard() {
 
   const statusColors: Record<string, string> = {
     pending: 'badge-yellow',
+    payment_pending: 'badge-yellow',
     paid: 'badge-blue',
     shipped: 'badge-purple',
     delivered: 'badge-green',

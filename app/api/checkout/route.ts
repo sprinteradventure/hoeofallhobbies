@@ -4,34 +4,31 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 export const dynamic = 'force-dynamic'
 
 // ============================================================================
-// STRIPE CHECKOUT — PREPARED STUB (not yet live)
+// STRIPE CHECKOUT — LIVE
 // ----------------------------------------------------------------------------
-// This route is the future server-side checkout flow. It is intentionally
-// gated behind env vars so it can ship to production safely before the owner
-// finishes Stripe setup.
+// Server-side checkout flow:
+//   1. Authenticate the buyer from their Supabase access token.
+//   2. Load the cart server-side (client prices are never trusted).
+//   3. Decrement stock atomically per item (refuses to oversell -> 409).
+//   4. Create one order per seller with status 'payment_pending', plus one
+//      order_items row per cart item, plus the 5% platform fee bookkeeping.
+//   5. Create a Stripe Checkout Session and return its hosted URL.
 //
-// REQUIRED Vercel env vars to activate (see STRIPE_SETUP.md):
-//   STRIPE_SECRET_KEY                    sk_live_... or sk_test_...
-//   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY   pk_live_... or pk_test_...
-//   STRIPE_WEBHOOK_SECRET                whsec_... (from the webhook you create)
-//   NEXT_PUBLIC_APP_URL                  https://<production domain>
+// The webhook (/api/webhooks/stripe) flips orders to 'paid' on
+// checkout.session.completed and clears the buyer's cart.
 //
-// Until STRIPE_SECRET_KEY is set, this route returns HTTP 501 and the
-// existing client-side "pending order" checkout remains the live flow.
+// Payments settle into the platform's Stripe account (no Stripe Connect);
+// sellers are paid out manually. The 5% commission is bookkeeping only.
 // ============================================================================
+
+const PLATFORM_FEE_PERCENT = 5
 
 export async function POST(request: NextRequest) {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY
 
   if (!stripeSecretKey) {
     return NextResponse.json(
-      {
-        error: 'Stripe is not configured yet',
-        code: 'STRIPE_NOT_CONFIGURED',
-        // TODO(owner): add STRIPE_SECRET_KEY in Vercel, then switch the
-        // client checkout page to POST here instead of inserting orders
-        // directly. See STRIPE_SETUP.md.
-      },
+      { error: 'Stripe is not configured yet', code: 'STRIPE_NOT_CONFIGURED' },
       { status: 501 }
     )
   }
@@ -50,6 +47,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
+    // Optional shipping address collected by the checkout form.
+    const body = await request.json().catch(() => ({}))
+    const shippingAddress = body?.shippingAddress ?? null
+
     // --- Load the buyer's cart server-side (never trust client prices) -----
     const { data: cartItems, error: cartError } = await admin
       .from('cart_items')
@@ -61,11 +62,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
     }
 
-    // TODO(stripe): verify stock for each item here (product.quantity >=
-    // item.quantity) and return 409 with the offending item if not.
+    // --- Decrement stock atomically per item (refuses to oversell) ---------
+    for (const item of cartItems) {
+      const { data: decremented, error: stockError } = await admin.rpc(
+        'decrement_product_stock',
+        { p_product_id: item.product_id, p_quantity: item.quantity }
+      )
+      if (stockError) throw stockError
+      if (!decremented) {
+        return NextResponse.json(
+          {
+            error: `Not enough stock for "${(item.product as any).title}". Please adjust your cart.`,
+            code: 'INSUFFICIENT_STOCK',
+          },
+          { status: 409 }
+        )
+      }
+    }
 
     // --- Create orders + order_items with status 'payment_pending' ---------
-    // Group by seller exactly like the current client flow.
     const sellerOrders = new Map<string, typeof cartItems>()
     for (const item of cartItems) {
       const sellerId = (item.product as any).seller_id
@@ -79,6 +94,7 @@ export async function POST(request: NextRequest) {
         (sum, item) => sum + (item.product as any).price * item.quantity,
         0
       )
+      const platformFee = Math.round(totalPrice * PLATFORM_FEE_PERCENT) / 100
 
       const { data: order, error: orderError } = await admin
         .from('orders')
@@ -88,7 +104,8 @@ export async function POST(request: NextRequest) {
           product_id: items[0].product_id, // legacy column; line items are in order_items
           quantity: items.reduce((sum, item) => sum + item.quantity, 0),
           total_price: totalPrice,
-          shipping_address: null, // TODO(stripe): collect via Stripe Checkout shipping_address_collection
+          platform_fee: platformFee,
+          shipping_address: shippingAddress,
           status: 'payment_pending',
         })
         .select()
@@ -109,39 +126,27 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Create the Stripe Checkout Session --------------------------------
-    // TODO(owner): after adding STRIPE_SECRET_KEY, uncomment and test this
-    // block in Stripe test mode, then flip the client checkout page to use it.
-    //
-    // const Stripe = (await import('stripe')).default
-    // const stripe = new Stripe(stripeSecretKey)
-    // const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    // const session = await stripe.checkout.sessions.create({
-    //   mode: 'payment',
-    //   line_items: cartItems.map((item) => ({
-    //     quantity: item.quantity,
-    //     price_data: {
-    //       currency: 'usd',
-    //       unit_amount: Math.round((item.product as any).price * 100),
-    //       product_data: { name: (item.product as any).title },
-    //     },
-    //   })),
-    //   // TODO(stripe): platform fee / seller split — decide commission first
-    //   // (owner decision pending; do NOT hardcode a fee here).
-    //   metadata: { order_ids: orderIds.join(','), buyer_id: user.id },
-    //   success_url: `${appUrl}/shop/orders?checkout=success`,
-    //   cancel_url: `${appUrl}/shop/checkout?checkout=cancelled`,
-    // })
-    // return NextResponse.json({ url: session.url })
+    const Stripe = (await import('stripe')).default
+    const stripe = new Stripe(stripeSecretKey)
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || 'https://hoe-of-all-hobbies.vercel.app'
 
-    return NextResponse.json(
-      {
-        error: 'Stripe session creation is stubbed',
-        code: 'STRIPE_STUB',
-        orderIds,
-        // TODO(owner): remove this branch once the session block above is live.
-      },
-      { status: 501 }
-    )
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: cartItems.map((item) => ({
+        quantity: item.quantity,
+        price_data: {
+          currency: 'usd',
+          unit_amount: Math.round((item.product as any).price * 100),
+          product_data: { name: (item.product as any).title },
+        },
+      })),
+      metadata: { order_ids: orderIds.join(','), buyer_id: user.id },
+      success_url: `${appUrl}/shop/orders?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/shop/cart`,
+    })
+
+    return NextResponse.json({ url: session.url })
   } catch (error) {
     console.error('Checkout API error:', error)
     return NextResponse.json(

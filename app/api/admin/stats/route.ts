@@ -36,10 +36,10 @@ export async function GET(request: NextRequest) {
     if (usersError) throw usersError
     if (productsError) throw productsError
 
-    // NOTE: platform revenue share is intentionally left as-is (20%) pending
-    // the owner's commission decision. Do not change without their sign-off.
+    // Platform commission is 5% of order totals (owner decision, June 2026).
+    // Prefer summing orders.platform_fee once historical rows are backfilled.
     const totalRevenue =
-      orders?.reduce((sum, o) => sum + (o.total_price || 0) * 0.2, 0) || 0
+      orders?.reduce((sum, o) => sum + (o.total_price || 0) * 0.05, 0) || 0
 
     return NextResponse.json({
       totalRevenue: totalRevenue.toFixed(2),
