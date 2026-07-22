@@ -1,13 +1,14 @@
 name: Run Database Migrations
 
+# Manual-only trigger. The automatic push trigger was removed because this
+# workflow requires GitHub secrets (SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD)
+# that were never configured, and because migrations have already been applied
+# directly via the Supabase SQL editor (re-running them fails on existing
+# objects). To re-enable auto-migrations: add the secrets in repo Settings >
+# Secrets and variables > Actions, repair migration history with
+# `supabase migration repair`, then restore the push trigger below.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'supabase/migrations/**'
-      - '.github/workflows/migrations.yml'
 
 jobs:
   migrate:
