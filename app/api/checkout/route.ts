@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     const Stripe = (await import('stripe')).default
     const stripe = new Stripe(stripeSecretKey)
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || 'https://hoe-of-all-hobbies.vercel.app'
+      process.env.NEXT_PUBLIC_APP_URL || 'https://www.hoeofallhobbies.com'
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
