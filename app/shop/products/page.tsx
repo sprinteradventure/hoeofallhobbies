@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Search, Heart, Filter, ChevronDown, ChevronRight, X } from 'lucide-react'
+import { Search, Heart, Filter, ChevronDown, ChevronRight, X, Tag } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
@@ -266,21 +266,30 @@ function ProductsPage() {
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-20">
-                <div className="text-5xl mb-4">🔍</div>
-                <p className="text-charcoal font-semibold mb-2">No products found</p>
-                <p className="text-taupe text-sm mb-6">
-                  Try adjusting your filters or search terms
+                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-blush bg-white">
+                  <Tag className="h-8 w-8 text-gold" strokeWidth={1.25} />
+                </div>
+                <p className="font-cormorant text-2xl font-bold text-charcoal mb-2">
+                  Nothing here yet
                 </p>
-                <button 
-                  onClick={() => {
-                    setSearchTerm('')
-                    setSelectedCategory('')
-                    setSelectedSubcategory('')
-                  }}
-                  className="btn btn-primary px-6 py-2"
-                >
-                  Clear Filters
-                </button>
+                <p className="text-taupe text-sm mb-8 font-lora max-w-sm mx-auto leading-relaxed">
+                  Be the first to list something! Your unused supplies could find a new creative home.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link href="/sell" className="btn btn-primary px-8 py-3 font-cormorant tracking-wider">
+                    Start Selling
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setSearchTerm('')
+                      setSelectedCategory('')
+                      setSelectedSubcategory('')
+                    }}
+                    className="btn btn-secondary px-6 py-3"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

@@ -24,7 +24,7 @@ export default function CategoriesPage() {
         {CATEGORIES.map((category) => (
           <div
             key={category.slug}
-            className="card hover:shadow-md transition-shadow"
+            className="card hover:border-gold/60 hover:shadow-md transition-all"
           >
             <Link
               href={`/shop/products?category=${encodeURIComponent(category.name)}`}
@@ -38,14 +38,14 @@ export default function CategoriesPage() {
             {category.description && (
               <p className="text-sm text-taupe mb-4">{category.description}</p>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 border-t border-blush mt-4 pt-4">
               {category.subcategories.map((sub) => (
                 <Link
                   key={sub}
                   href={`/shop/products?category=${encodeURIComponent(
                     category.name
                   )}&subcategory=${encodeURIComponent(sub)}`}
-                  className="text-xs px-2.5 py-1 rounded-full bg-ivory text-taupe hover:bg-gold/10 hover:text-gold transition-colors"
+                  className="text-xs px-2.5 py-1 rounded-full bg-ivory text-taupe hover:bg-gold/10 hover:text-gold hover:underline underline-offset-4 decoration-gold/50 transition-colors"
                 >
                   {sub}
                 </Link>

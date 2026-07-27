@@ -21,12 +21,12 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden lg:flex gap-8 items-center">
-            <Link href="/" className="text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider">
+            <Link href="/" className="text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider underline-offset-8 decoration-gold/70 decoration-2 hover:underline">
               Home
             </Link>
 
             <div className="relative group">
-              <button className="flex items-center gap-2 text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider">
+              <button className="flex items-center gap-2 text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider underline-offset-8 decoration-gold/70 decoration-2 hover:underline">
                 Shop
                 <ChevronDown className="h-4 w-4" />
               </button>
@@ -40,10 +40,10 @@ export default function Navbar() {
               </div>
             </div>
 
-            <Link href="/sell" className="text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider">
+            <Link href="/sell" className="text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider underline-offset-8 decoration-gold/70 decoration-2 hover:underline">
               Sell
             </Link>
-            <Link href="/account" className="text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider">
+            <Link href="/account" className="text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider underline-offset-8 decoration-gold/70 decoration-2 hover:underline">
               Account
             </Link>
             <Link href="/shop/cart" className="px-5 py-2.5 bg-gold text-white font-bold rounded-lg hover:bg-opacity-90 transition-all flex items-center gap-2 font-cormorant text-sm tracking-wider">

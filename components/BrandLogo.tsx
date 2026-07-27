@@ -131,14 +131,12 @@ export function RibbonDivider() {
 
 export function SmallMonogram() {
   return (
-    <div className="w-8 h-8 rounded-full bg-charcoal/90 flex items-center justify-center border border-gold/30">
-      <Image
-        src="/images/H.png"
-        alt="Monogram"
-        width={32}
-        height={32}
-        className="w-5 h-5 object-contain"
-      />
-    </div>
+    <img
+      src="/images/hh-monogram.svg"
+      alt="Hoe of All Hobbies monogram"
+      width={36}
+      height={36}
+      className="h-9 w-9 object-contain"
+    />
   );
 }

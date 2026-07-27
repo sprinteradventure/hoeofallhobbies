@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { HoeWordmark, BotanicalDivider } from '@/components/BrandLogo'
 import { CATEGORIES, getCategoryNames } from '@/lib/categories'
 import { ArrowRight, Search, ShoppingBag, Sparkles, Users, Shield, Truck } from 'lucide-react'
 
@@ -7,38 +6,37 @@ export default function Home() {
   return (
     <div className="space-y-0">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-ivory via-cream to-blush px-4 py-20 sm:py-28">
+      <section className="relative overflow-hidden bg-gradient-to-br from-ivory via-cream to-blush px-4 py-12 sm:py-16">
         <div className="mx-auto max-w-5xl text-center">
           <div className="mb-6 flex justify-center">
             <div className="mx-auto max-w-sm md:max-w-md">
               <img
                 src="/images/logo-of-all.png"
-                alt="of all — decorative logo artwork"
+                alt="Hoe of All Hobbies — Sustainable Finds for Creative Minds"
                 className="w-full h-auto object-contain"
               />
             </div>
           </div>
 
-          <HoeWordmark />
+          {/* Thin gold rule beneath the artwork lockup */}
+          <div className="mx-auto mb-6 h-px w-24 bg-gold"></div>
 
-          <BotanicalDivider />
-
-          <p className="text-lg sm:text-xl text-taupe mb-10 max-w-2xl mx-auto leading-relaxed font-lora">
+          <p className="text-lg sm:text-xl text-taupe mb-8 max-w-2xl mx-auto leading-relaxed font-lora">
             The curated marketplace for craft and hobby supplies. Buy and sell rare, vintage, and new finds from passionate creators worldwide.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/shop/products" className="btn btn-primary px-8 py-3.5 text-lg font-cormorant tracking-wider">
+          <div className="mx-auto flex max-w-md flex-col gap-4 sm:max-w-none sm:flex-row sm:justify-center">
+            <Link href="/shop/products" className="btn btn-primary w-full sm:w-auto px-10 py-4 text-lg font-cormorant tracking-wider">
               <ShoppingBag className="h-5 w-5 mr-2" />
               Browse Shop
             </Link>
-            <Link href="/seller/listings/new" className="btn btn-secondary px-8 py-3.5 text-lg font-cormorant tracking-wider">
+            <Link href="/seller/listings/new" className="btn btn-secondary w-full sm:w-auto px-10 py-4 text-lg font-cormorant tracking-wider">
               <Sparkles className="h-5 w-5 mr-2" />
               Start Selling
             </Link>
           </div>
 
-          <div className="mt-12 flex flex-wrap justify-center gap-8 text-taupe text-sm font-lora">
+          <div className="mt-10 flex flex-wrap justify-center gap-8 text-taupe text-sm font-lora">
             <span className="flex items-center gap-2"><Shield className="h-4 w-4 text-gold" /> Secure Payments</span>
             <span className="flex items-center gap-2"><Users className="h-4 w-4 text-gold" /> Community Driven</span>
             <span className="flex items-center gap-2"><Truck className="h-4 w-4 text-gold" /> Easy Shipping</span>
