@@ -13,6 +13,8 @@ export interface UserProfile {
   total_sales: number
   total_reviews: number
   stripe_account_id?: string
+  stripe_onboarding_complete?: boolean
+  stripe_payouts_enabled?: boolean
   created_at: string
   updated_at: string
 }

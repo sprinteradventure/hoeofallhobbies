@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { TrendingUp, Package, DollarSign, AlertCircle, ShoppingBag, Star, Users } from 'lucide-react'
+import { TrendingUp, Package, DollarSign, AlertCircle, ShoppingBag, Star, Users, Wallet, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { UserProfile } from '@/lib/types'
 import { SELLER_KEEP_PERCENT } from '@/lib/categories'
@@ -14,6 +14,7 @@ export default function SellerDashboard() {
   const [stats, setStats] = useState({ sales: 0, revenue: 0, products: 0, orders: 0, rating: 0 })
   const [loading, setLoading] = useState(true)
   const [recentOrders, setRecentOrders] = useState<any[]>([])
+  const [payoutBannerDismissed, setPayoutBannerDismissed] = useState(false)
 
   useEffect(() => {
     loadDashboard()
@@ -110,6 +111,31 @@ export default function SellerDashboard() {
         </div>
       )}
 
+      {!payoutBannerDismissed && profile && !profile.stripe_payouts_enabled && (
+        <div className="mb-8 card bg-ivory border-gold/40 relative">
+          <button
+            onClick={() => setPayoutBannerDismissed(true)}
+            className="absolute top-3 right-3 text-taupe hover:text-charcoal transition-colors"
+            aria-label="Dismiss payout setup reminder"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="flex gap-3">
+            <Wallet className="h-5 w-5 text-gold flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-charcoal">Set up payouts to get paid</h3>
+              <p className="text-sm text-taupe mb-3">
+                Connect your bank account with Stripe to receive {SELLER_KEEP_PERCENT}% of each sale
+                automatically. Buyers can&apos;t purchase your items until payout setup is complete.
+              </p>
+              <Link href="/seller/payouts" className="btn btn-primary px-5 py-2 text-sm">
+                Set up payouts
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid md:grid-cols-4 gap-6 mb-10">
         <div className="card">
@@ -172,6 +198,10 @@ export default function SellerDashboard() {
               </Link>
               <Link href="/seller/orders" className="btn btn-secondary w-full py-2.5">
                 View Orders
+              </Link>
+              <Link href="/seller/payouts" className="btn btn-ghost w-full py-2.5 border border-blush">
+                <Wallet className="h-4 w-4 mr-2" />
+                Payouts
               </Link>
               <Link href="/seller/listings" className="btn btn-ghost w-full py-2.5 border border-blush">
                 Manage Listings

@@ -6,14 +6,18 @@ export const dynamic = 'force-dynamic'
 // ============================================================================
 // STRIPE WEBHOOK — LIVE
 // ----------------------------------------------------------------------------
-// Listens for checkout.session.completed, flips the order(s) from
-// 'payment_pending' to 'paid', records the payment intent, and clears the
+// checkout.session.completed: flips the order(s) from 'payment_pending' to
+// 'paid', records the payment intent, and clears the purchased items from the
 // buyer's cart. Signature is verified with STRIPE_WEBHOOK_SECRET; unverified
 // requests are rejected with 400.
 //
+// account.updated: keeps user_profiles.stripe_onboarding_complete and
+// stripe_payouts_enabled in sync with the seller's Stripe Express account
+// (row matched on stripe_account_id).
+//
 // Configured endpoint (see STRIPE_SETUP.md):
 //   URL:    https://hoe-of-all-hobbies.vercel.app/api/webhooks/stripe
-//   Events: checkout.session.completed
+//   Events: checkout.session.completed, account.updated
 // ============================================================================
 
 export async function POST(request: NextRequest) {
@@ -59,13 +63,49 @@ export async function POST(request: NextRequest) {
 
         if (error) throw error
 
-        // Payment succeeded — clear the buyer's cart (stock was already
-        // decremented when the checkout session was created).
+        // Payment succeeded — clear the buyer's purchased items (stock was
+        // already decremented when the checkout session was created). Only
+        // the items in these orders are removed: checkout is per-seller, so
+        // other sellers' items may still be waiting in the cart.
         const buyerId = session.metadata?.buyer_id
         if (buyerId) {
-          await admin.from('cart_items').delete().eq('user_id', buyerId)
+          const { data: purchasedItems } = await admin
+            .from('order_items')
+            .select('product_id')
+            .in('order_id', orderIds)
+
+          const purchasedProductIds = (purchasedItems || [])
+            .map((row: any) => row.product_id)
+            .filter(Boolean)
+
+          if (purchasedProductIds.length > 0) {
+            await admin
+              .from('cart_items')
+              .delete()
+              .eq('user_id', buyerId)
+              .in('product_id', purchasedProductIds)
+          } else {
+            // Legacy sessions without order_items: fall back to clearing the
+            // whole cart (pre-Connect behavior).
+            await admin.from('cart_items').delete().eq('user_id', buyerId)
+          }
         }
       }
+    }
+
+    if (event.type === 'account.updated') {
+      const account = event.data.object as any
+      const admin = getSupabaseAdmin()
+
+      const { error } = await admin
+        .from('user_profiles')
+        .update({
+          stripe_onboarding_complete: !!account.details_submitted,
+          stripe_payouts_enabled: !!(account.payouts_enabled && account.charges_enabled),
+        })
+        .eq('stripe_account_id', account.id)
+
+      if (error) throw error
     }
 
     return NextResponse.json({ received: true })
