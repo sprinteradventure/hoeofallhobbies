@@ -20,22 +20,20 @@ export default function SignupPage() {
     setError('')
 
     try {
-      const { data, error: authError } = await supabase.auth.signUp({
+      const { error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.hoeofallhobbies.com'}/auth/callback` },
+        options: {
+          data: { username: username || email.split('@')[0] },
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.hoeofallhobbies.com'}/auth/callback`,
+        },
       })
 
       if (authError) throw authError
 
-      if (data.user) {
-        await supabase.from('user_profiles').insert({
-          id: data.user.id,
-          email,
-          username: username || email.split('@')[0],
-        })
-      }
-
+      // user_profiles row is created server-side by the on_auth_user_created
+      // trigger (migration 008). A direct insert here can never succeed before
+      // email confirmation because there is no session, so RLS blocks it.
       router.push('/auth/verify-email')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed')
