@@ -6,11 +6,22 @@ import { supabase } from '@/lib/supabase/client'
 import { ShieldAlert } from 'lucide-react'
 
 type AdminStats = {
-  totalRevenue: string
+  grossSales: string
+  platformFees: string
+  sellerPayouts: string
+  pendingOrders: number
+  paidOrders: number
   totalOrders: number
   activeUsers: number
   sellerCount: number
   activeProducts: number
+}
+
+function formatMoney(value: string): string {
+  return Number(value).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 export default function AdminDashboard() {
@@ -110,14 +121,29 @@ export default function AdminDashboard() {
         </Link>
       </div>
 
-      <div className="grid md:grid-cols-5 gap-4">
+      <div className="grid md:grid-cols-3 gap-4 mb-4">
         <div className="card">
-          <p className="text-neutral-600 text-sm">Total Revenue</p>
-          <p className="text-2xl font-bold">${stats.totalRevenue}</p>
+          <p className="text-neutral-600 text-sm">Gross Sales</p>
+          <p className="text-2xl font-bold">${formatMoney(stats.grossSales)}</p>
         </div>
         <div className="card">
-          <p className="text-neutral-600 text-sm">Total Orders</p>
-          <p className="text-2xl font-bold">{stats.totalOrders}</p>
+          <p className="text-neutral-600 text-sm">Your Commission (5%)</p>
+          <p className="text-2xl font-bold">${formatMoney(stats.platformFees)}</p>
+        </div>
+        <div className="card">
+          <p className="text-neutral-600 text-sm">Seller Payouts</p>
+          <p className="text-2xl font-bold">${formatMoney(stats.sellerPayouts)}</p>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-5 gap-4">
+        <div className="card">
+          <p className="text-neutral-600 text-sm">Paid Orders</p>
+          <p className="text-2xl font-bold">{stats.paidOrders}</p>
+        </div>
+        <div className="card">
+          <p className="text-neutral-600 text-sm">Pending Payment</p>
+          <p className="text-2xl font-bold">{stats.pendingOrders}</p>
         </div>
         <div className="card">
           <p className="text-neutral-600 text-sm">Active Users</p>

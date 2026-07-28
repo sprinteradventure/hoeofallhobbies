@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       { data: users, error: usersError },
       { data: products, error: productsError },
     ] = await Promise.all([
-      admin.from('orders').select('total_price, status'),
+      admin.from('orders').select('total_price, platform_fee, status'),
       admin.from('user_profiles').select('id, is_seller'),
       admin.from('products').select('id, is_active'),
     ])
@@ -36,14 +36,35 @@ export async function GET(request: NextRequest) {
     if (usersError) throw usersError
     if (productsError) throw productsError
 
-    // Platform commission is 5% of order totals (owner decision, June 2026).
-    // Prefer summing orders.platform_fee once historical rows are backfilled.
-    const totalRevenue =
-      orders?.reduce((sum, o) => sum + (o.total_price || 0) * 0.05, 0) || 0
+    // Revenue breakdown. Platform commission is 5% of order totals (owner
+    // decision, June 2026); orders carry a platform_fee column (migration 006)
+    // written at checkout. 'Paid or later' = the buyer actually paid, so
+    // payment_pending/disputed/refunded/cancelled orders are excluded.
+    const PAID_STATUSES = ['paid', 'shipped', 'delivered', 'completed']
+    const allOrders = orders || []
+    const paidOrdersList = allOrders.filter((o) =>
+      PAID_STATUSES.includes(o.status)
+    )
+
+    const grossSales = paidOrdersList.reduce(
+      (sum, o) => sum + (o.total_price || 0),
+      0
+    )
+    const platformFees = paidOrdersList.reduce(
+      (sum, o) =>
+        sum + (o.platform_fee != null ? o.platform_fee : (o.total_price || 0) * 0.05),
+      0
+    )
+    const sellerPayouts = grossSales - platformFees
 
     return NextResponse.json({
-      totalRevenue: totalRevenue.toFixed(2),
-      totalOrders: orders?.length || 0,
+      grossSales: grossSales.toFixed(2),
+      platformFees: platformFees.toFixed(2),
+      sellerPayouts: sellerPayouts.toFixed(2),
+      pendingOrders: allOrders.filter((o) => o.status === 'payment_pending')
+        .length,
+      paidOrders: paidOrdersList.length,
+      totalOrders: allOrders.length,
       activeUsers: users?.length || 0,
       sellerCount: users?.filter((u) => u.is_seller).length || 0,
       activeProducts: products?.filter((p) => p.is_active).length || 0,
