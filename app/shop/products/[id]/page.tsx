@@ -3,10 +3,19 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Heart, Share2, ShoppingCart, ArrowLeft, Star, Store, Truck } from 'lucide-react'
+import { Heart, Share2, ShoppingCart, ArrowLeft, Star, Store, Truck, Flag, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
+
+const REPORT_REASONS = [
+  'Prohibited or dangerous item',
+  'Counterfeit or recalled item',
+  'Wrong category or misleading',
+  'Spam or scam',
+  'Inappropriate content',
+  'Other',
+]
 
 export default function ProductDetailPage() {
   const router = useRouter()
@@ -19,10 +28,22 @@ export default function ProductDetailPage() {
   const [addingToCart, setAddingToCart] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
+  const [viewerId, setViewerId] = useState<string | null>(null)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportReason, setReportReason] = useState(REPORT_REASONS[0])
+  const [reportDetails, setReportDetails] = useState('')
+  const [reportSubmitting, setReportSubmitting] = useState(false)
+  const [reportMessage, setReportMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
     fetchProduct()
+    fetchViewer()
   }, [productId])
+
+  async function fetchViewer() {
+    const { data: { user } } = await supabase.auth.getUser()
+    setViewerId(user?.id ?? null)
+  }
 
   async function fetchProduct() {
     try {
@@ -83,6 +104,57 @@ export default function ProductDetailPage() {
     } finally {
       setAddingToCart(false)
     }
+  }
+
+  async function handleSubmitReport(e: React.FormEvent) {
+    e.preventDefault()
+    setReportSubmitting(true)
+    setReportMessage(null)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setReportMessage({ kind: 'error', text: 'Please sign in to report a listing.' })
+        return
+      }
+
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          reason: reportReason,
+          details: reportDetails.trim() || undefined,
+        }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        setReportMessage({ kind: 'error', text: 'Please sign in to report a listing.' })
+      } else if (res.status === 409) {
+        setReportMessage({ kind: 'error', text: data.error || 'You have already reported this listing.' })
+      } else if (!res.ok) {
+        setReportMessage({ kind: 'error', text: data.error || 'Failed to submit report.' })
+      } else {
+        setReportMessage({ kind: 'success', text: 'Thanks — our team will review this listing.' })
+      }
+    } catch (err) {
+      console.error('Error submitting report:', err)
+      setReportMessage({ kind: 'error', text: 'Failed to submit report.' })
+    } finally {
+      setReportSubmitting(false)
+    }
+  }
+
+  function closeReportModal() {
+    setShowReportModal(false)
+    setReportDetails('')
+    setReportReason(REPORT_REASONS[0])
+    setReportMessage(null)
   }
 
   if (loading) {
@@ -184,6 +256,17 @@ export default function ProductDetailPage() {
                     )}
                   </div>
                 </div>
+                {viewerId && viewerId !== product.seller_id && (
+                  <div className="mt-3 pt-3 border-t border-blush">
+                    <button
+                      onClick={() => setShowReportModal(true)}
+                      className="inline-flex items-center gap-1.5 text-xs text-taupe hover:text-gold transition-colors"
+                    >
+                      <Flag className="h-3.5 w-3.5" />
+                      Report this listing
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -305,6 +388,94 @@ export default function ProductDetailPage() {
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        )}
+        {/* Report Listing Modal */}
+        {showReportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/50 px-4">
+            <div className="card w-full max-w-md">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-cormorant text-2xl font-bold text-charcoal">
+                  Report this listing
+                </h2>
+                <button
+                  onClick={closeReportModal}
+                  className="text-taupe hover:text-charcoal transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {reportMessage?.kind === 'success' ? (
+                <div>
+                  <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-4">
+                    {reportMessage.text}
+                  </p>
+                  <button onClick={closeReportModal} className="btn btn-primary w-full py-2.5">
+                    Close
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmitReport} className="space-y-4">
+                  <div>
+                    <label htmlFor="report-reason" className="label block mb-1.5">
+                      Reason
+                    </label>
+                    <select
+                      id="report-reason"
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      className="input"
+                    >
+                      {REPORT_REASONS.map((reason) => (
+                        <option key={reason} value={reason}>
+                          {reason}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="report-details" className="label block mb-1.5">
+                      Details <span className="text-taupe font-normal">(optional)</span>
+                    </label>
+                    <textarea
+                      id="report-details"
+                      value={reportDetails}
+                      onChange={(e) => setReportDetails(e.target.value)}
+                      rows={4}
+                      maxLength={1000}
+                      placeholder="Tell us anything else that would help our review."
+                      className="input resize-none"
+                    />
+                  </div>
+
+                  {reportMessage?.kind === 'error' && (
+                    <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                      {reportMessage.text}
+                    </p>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      disabled={reportSubmitting}
+                      className="btn btn-primary flex-1 py-2.5"
+                    >
+                      {reportSubmitting ? 'Submitting...' : 'Submit Report'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeReportModal}
+                      className="btn btn-ghost border border-blush px-5 py-2.5"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}

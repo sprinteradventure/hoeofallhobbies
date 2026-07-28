@@ -15,6 +15,7 @@ type AdminStats = {
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null)
+  const [openReports, setOpenReports] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [unauthorized, setUnauthorized] = useState(false)
 
@@ -43,6 +44,19 @@ export default function AdminDashboard() {
       if (!res.ok) throw new Error('Failed to load admin stats')
 
       setStats(await res.json())
+
+      // Best-effort open-report count for the Moderation Queue link.
+      try {
+        const reportsRes = await fetch('/api/admin/reports?status=open', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        if (reportsRes.ok) {
+          const { reports } = await reportsRes.json()
+          setOpenReports(reports.length)
+        }
+      } catch {
+        // Non-fatal: the link still works without a count.
+      }
     } catch (err) {
       console.error('Admin dashboard error:', err)
       setUnauthorized(true)
@@ -83,7 +97,18 @@ export default function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12">
-      <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+        <Link
+          href="/admin/moderation"
+          className="btn btn-primary px-4 py-2 text-sm flex items-center gap-2"
+        >
+          Moderation Queue
+          {openReports !== null && (
+            <span className="badge badge-gold">{openReports} open</span>
+          )}
+        </Link>
+      </div>
 
       <div className="grid md:grid-cols-5 gap-4">
         <div className="card">
