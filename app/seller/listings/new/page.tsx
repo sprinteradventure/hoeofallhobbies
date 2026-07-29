@@ -217,7 +217,7 @@ export default function NewListingPage() {
           <div>
             <label className="label block mb-2">Price (USD) *</label>
             <div className="flex">
-              <span className="input rounded-r-none flex items-center px-4 bg-ivory text-taupe border-r-0">$</span>
+              <span className="input rounded-r-none w-auto shrink-0 flex items-center px-4 bg-ivory text-taupe border-r-0">$</span>
               <input
                 type="number"
                 name="price"

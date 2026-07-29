@@ -216,7 +216,7 @@ export default function EditListingPage() {
             <div>
               <label htmlFor="price" className="label block mb-2">Price (USD) *</label>
               <div className="flex">
-                <span className="input rounded-r-none flex items-center px-3 bg-neutral-100">$</span>
+                <span className="input rounded-r-none w-auto shrink-0 flex items-center px-3 bg-neutral-100">$</span>
                 <input
                   id="price"
                   type="number"
