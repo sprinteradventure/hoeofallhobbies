@@ -208,6 +208,12 @@ export async function POST(request: NextRequest) {
     // Exactly one seller per session (enforced above).
     const destinationAccount = sellerById.get(scopedSellerIds[0])!.stripe_account_id as string
 
+    // Stripe Tax readiness: off by default. Once the owner completes Stripe
+    // Tax registration, set STRIPE_AUTOMATIC_TAX=true in Vercel and Stripe
+    // computes/collects tax on the session automatically. customer_update
+    // lets Stripe refresh the customer address it uses for tax calculation.
+    const automaticTaxEnabled = process.env.STRIPE_AUTOMATIC_TAX === 'true'
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: scopedItems.map((item) => ({
@@ -218,6 +224,8 @@ export async function POST(request: NextRequest) {
           product_data: { name: (item.product as any).title },
         },
       })),
+      automatic_tax: { enabled: automaticTaxEnabled },
+      ...(automaticTaxEnabled ? { customer_update: { address: 'auto' as const } } : {}),
       payment_intent_data: {
         application_fee_amount: applicationFeeCents,
         transfer_data: { destination: destinationAccount },
