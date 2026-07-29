@@ -37,6 +37,9 @@ export interface Product {
   description: string
   category: string
   subcategory?: string
+  categories?: string[]
+  subcategories?: string[]
+  video_url?: string
   price: number
   condition: 'new' | 'like-new' | 'used' | 'damaged'
   quantity: number

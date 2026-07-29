@@ -14,12 +14,12 @@ export default function NewListingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([])
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: CATEGORIES[0].name,
-    subcategory: '',
     price: '',
     condition: CONDITIONS[0],
     quantity: '1',
@@ -30,7 +30,23 @@ export default function NewListingPage() {
     height_in: '',
   })
 
-  const availableSubcategories = getSubcategoriesForCategory(formData.category)
+  function toggleCategory(name: string) {
+    setSelectedCategories((prev) => {
+      if (prev.includes(name)) {
+        // Removing a category also drops its subcategory selections.
+        const removedSubs = new Set(getSubcategoriesForCategory(name))
+        setSelectedSubcategories((subs) => subs.filter((s) => !removedSubs.has(s)))
+        return prev.filter((c) => c !== name)
+      }
+      return [...prev, name]
+    })
+  }
+
+  function toggleSubcategory(name: string) {
+    setSelectedSubcategories((prev) =>
+      prev.includes(name) ? prev.filter((s) => s !== name) : [...prev, name]
+    )
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -38,6 +54,10 @@ export default function NewListingPage() {
     setError('')
 
     try {
+      if (selectedCategories.length === 0) {
+        throw new Error('Please choose at least one category.')
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
@@ -47,8 +67,13 @@ export default function NewListingPage() {
           seller_id: user.id,
           title: formData.title,
           description: formData.description,
-          category: formData.category,
-          subcategory: formData.subcategory || null,
+          // Legacy single-value columns keep every existing shop filter,
+          // search, and breadcrumb working: they hold the FIRST selection.
+          // The arrays carry the full multi-category selection.
+          category: selectedCategories[0],
+          subcategory: selectedSubcategories[0] || null,
+          categories: selectedCategories,
+          subcategories: selectedSubcategories,
           price: parseFloat(formData.price),
           condition: formData.condition,
           quantity: parseInt(formData.quantity),
@@ -75,7 +100,6 @@ export default function NewListingPage() {
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      ...(name === 'category' ? { subcategory: '' } : {})
     }))
   }
 
@@ -134,37 +158,65 @@ export default function NewListingPage() {
         <div className="space-y-4">
           <h2 className="font-cormorant text-xl font-bold text-charcoal border-b border-blush pb-3">Category & Details</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="label block mb-2">Category *</label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="input"
-              >
-                {CATEGORIES.map(cat => (
-                  <option key={cat.slug} value={cat.name}>{cat.name}</option>
-                ))}
-              </select>
+          <div>
+            <label className="label block mb-2">Categories * <span className="text-taupe font-normal">(pick one or more)</span></label>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map(cat => {
+                const selected = selectedCategories.includes(cat.name)
+                return (
+                  <button
+                    type="button"
+                    key={cat.slug}
+                    onClick={() => toggleCategory(cat.name)}
+                    className={`px-3.5 py-2 rounded-full text-sm border-2 transition-all ${
+                      selected
+                        ? 'border-gold bg-gold/10 text-charcoal font-semibold'
+                        : 'border-blush bg-white text-taupe hover:border-gold/50 hover:text-charcoal'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                )
+              })}
             </div>
-
-            <div>
-              <label className="label block mb-2">Subcategory</label>
-              <select
-                name="subcategory"
-                value={formData.subcategory}
-                onChange={handleChange}
-                className="input"
-                disabled={availableSubcategories.length === 0}
-              >
-                <option value="">Select subcategory...</option>
-                {availableSubcategories.map(sub => (
-                  <option key={sub} value={sub}>{sub}</option>
-                ))}
-              </select>
-            </div>
+            {selectedCategories.length === 0 && (
+              <p className="text-xs text-taupe mt-2">Choose at least one category so buyers can find your listing.</p>
+            )}
           </div>
+
+          {selectedCategories.length > 0 && (
+            <div className="space-y-3">
+              <label className="label block">Subcategories <span className="text-taupe font-normal">(optional, pick any that fit)</span></label>
+              {selectedCategories.map(catName => {
+                const subs = getSubcategoriesForCategory(catName)
+                if (subs.length === 0) return null
+                return (
+                  <div key={catName} className="rounded-xl border border-blush bg-ivory/50 p-3">
+                    <p className="text-xs font-semibold text-taupe uppercase tracking-wide mb-2">{catName}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {subs.map(sub => {
+                        const selected = selectedSubcategories.includes(sub)
+                        return (
+                          <button
+                            type="button"
+                            key={sub}
+                            onClick={() => toggleSubcategory(sub)}
+                            className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
+                              selected
+                                ? 'border-gold bg-gold/10 text-charcoal font-semibold'
+                                : 'border-blush bg-white text-taupe hover:border-gold/50 hover:text-charcoal'
+                            }`}
+                          >
+                            {sub}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

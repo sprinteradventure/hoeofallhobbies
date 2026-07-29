@@ -57,12 +57,20 @@ function ProductsPage() {
         .select('*, seller:user_profiles(*)')
         .eq('is_active', true)
 
-      if (selectedCategory && selectedCategory !== 'All') {
-        query = query.eq('category', selectedCategory)
+      // Match BOTH the legacy single-value columns (old rows) and the new
+      // multi-select arrays (rows where the category is any of several).
+      // PostgREST: col.eq."v" OR array_col cs {"v"}.
+      const orCategoryMatch = (col: string, arrCol: string, value: string) => {
+        const quoted = `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+        return `${col}.eq.${quoted},${arrCol}.cs.{${quoted}}`
       }
-      
+
+      if (selectedCategory && selectedCategory !== 'All') {
+        query = query.or(orCategoryMatch('category', 'categories', selectedCategory))
+      }
+
       if (selectedSubcategory) {
-        query = query.eq('subcategory', selectedSubcategory)
+        query = query.or(orCategoryMatch('subcategory', 'subcategories', selectedSubcategory))
       }
 
       const { data, error } = await query.order('listing_date', { ascending: false })

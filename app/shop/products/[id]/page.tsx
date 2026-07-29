@@ -56,12 +56,13 @@ export default function ProductDetailPage() {
       if (error) throw error
       setProduct(data)
 
-      // Fetch related products
+      // Fetch related products (match legacy category OR the categories array)
       if (data) {
+        const quoted = `"${String(data.category).replace(/"/g, '\\"')}"`
         const { data: related } = await supabase
           .from('products')
           .select('*, seller:user_profiles(*)')
-          .eq('category', data.category)
+          .or(`category.eq.${quoted},categories.cs.{${quoted}}`)
           .eq('is_active', true)
           .neq('id', productId)
           .limit(4)
