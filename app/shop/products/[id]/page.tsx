@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Heart, Share2, ShoppingCart, ArrowLeft, Star, Store, Truck, Flag, X } from 'lucide-react'
+import { Heart, Share2, ShoppingCart, ArrowLeft, Star, Store, Truck, Flag, X, BadgeCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
@@ -29,6 +29,7 @@ export default function ProductDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [viewerId, setViewerId] = useState<string | null>(null)
+  const [sellerItemsSold, setSellerItemsSold] = useState(0)
   const [showReportModal, setShowReportModal] = useState(false)
   const [reportReason, setReportReason] = useState(REPORT_REASONS[0])
   const [reportDetails, setReportDetails] = useState('')
@@ -55,6 +56,21 @@ export default function ProductDetailPage() {
 
       if (error) throw error
       setProduct(data)
+
+      // Lifetime items sold by this seller — gates the buyer-facing
+      // "✓ Verified seller" chip (verified + 50+ items sold). Same
+      // paid-or-later status set the admin sales counts use. One aggregate
+      // query; orders.quantity is the order's total item count.
+      if (data?.seller_id) {
+        const { data: sellerOrders } = await supabase
+          .from('orders')
+          .select('quantity')
+          .eq('seller_id', data.seller_id)
+          .in('status', ['paid', 'shipped', 'delivered', 'completed'])
+        setSellerItemsSold(
+          (sellerOrders || []).reduce((sum, o: any) => sum + (o.quantity || 0), 0)
+        )
+      }
 
       // Fetch related products (match legacy category OR the categories array)
       if (data) {
@@ -175,6 +191,10 @@ export default function ProductDetailPage() {
 
   const hasImages = product.images && product.images.length > 0
 
+  // Buyer-facing trust chip: verified seller with 50+ lifetime items sold.
+  const showVerifiedSellerChip =
+    !!product.seller?.seller_verified && sellerItemsSold >= 50
+
   return (
     <div className="min-h-screen bg-cream">
       <div className="mx-auto max-w-7xl px-4 py-8">
@@ -257,9 +277,17 @@ export default function ProductDetailPage() {
                     <Store className="h-5 w-5 text-gold" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-charcoal">
-                      {product.seller.username || product.seller.full_name || 'Unknown Seller'}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-charcoal">
+                        {product.seller.username || product.seller.full_name || 'Unknown Seller'}
+                      </p>
+                      {showVerifiedSellerChip && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gold/10 text-gold border border-gold/40">
+                          <BadgeCheck className="h-3.5 w-3.5" />
+                          ✓ Verified seller
+                        </span>
+                      )}
+                    </div>
                     {product.seller.avg_rating && (
                       <div className="flex items-center gap-1 text-sm text-taupe">
                         <Star className="h-3.5 w-3.5 text-gold fill-gold" />
