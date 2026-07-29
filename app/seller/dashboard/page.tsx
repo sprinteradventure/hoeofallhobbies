@@ -49,7 +49,7 @@ export default function SellerDashboard() {
 
       const { data: orders } = await supabase
         .from('orders')
-        .select('total_price, status, created_at, buyer_id')
+        .select('id, total_price, status, created_at, buyer_id')
         .eq('seller_id', user.id)
         .order('created_at', { ascending: false })
 
