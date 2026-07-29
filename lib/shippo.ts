@@ -2,6 +2,8 @@
 // it reads SHIPPO_API_KEY. All marketplace Shippo calls go through here.
 // Docs: https://goshippo.com/docs/reference
 
+import type { SupabaseClient } from '@supabase/supabase-js'
+
 const SHIPPO_BASE = 'https://api.goshippo.com'
 
 export type ShippoAddress = {
@@ -113,4 +115,72 @@ export async function shippoCreateTransaction(rateId: string): Promise<{
     method: 'POST',
     body: JSON.stringify({ rate: rateId, label_file_type: 'PDF', async: false }),
   })
+}
+
+// ============================================================================
+// purchaseLabelForOrder — the ONE implementation for buying a Shippo label.
+// Used by the Stripe webhook (automatic, after payment) and by
+// POST /api/orders/[id]/label (manual retry from the seller orders page).
+// Never throws for carrier-side failures: returns { ok: false, message }
+// with Shippo's own error text (e.g. missing billing method) so callers can
+// surface it. Throws only for unexpected/DB errors.
+// ============================================================================
+
+export type LabelPurchaseResult =
+  | {
+      ok: true
+      transactionId: string
+      labelUrl: string | null
+      trackingNumber: string | null
+      trackingUrl: string | null
+    }
+  | { ok: false; message: string }
+
+export async function purchaseLabelForOrder(
+  admin: SupabaseClient,
+  order: { id: string; shippo_rate_id: string }
+): Promise<LabelPurchaseResult> {
+  let txn
+  try {
+    txn = await shippoCreateTransaction(order.shippo_rate_id)
+  } catch (err) {
+    const message =
+      err instanceof ShippoError
+        ? err.message
+        : 'Could not reach the shipping provider. Please try again.'
+    return { ok: false, message }
+  }
+
+  if (txn.status !== 'SUCCESS') {
+    const detail = (txn.messages || [])
+      .map((m) => m?.text)
+      .filter(Boolean)
+      .join(' ')
+    return {
+      ok: false,
+      message:
+        detail ||
+        `The shipping provider could not create the label (status ${txn.status}). Please try again or contact support.`,
+    }
+  }
+
+  const { error: updateError } = await admin
+    .from('orders')
+    .update({
+      shippo_transaction_id: txn.object_id,
+      label_url: txn.label_url ?? null,
+      tracking_number: txn.tracking_number ?? null,
+      tracking_url: txn.tracking_url_provider ?? null,
+    })
+    .eq('id', order.id)
+
+  if (updateError) throw updateError
+
+  return {
+    ok: true,
+    transactionId: txn.object_id,
+    labelUrl: txn.label_url ?? null,
+    trackingNumber: txn.tracking_number ?? null,
+    trackingUrl: txn.tracking_url_provider ?? null,
+  }
 }

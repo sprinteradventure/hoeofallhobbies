@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-import { shippoCreateTransaction } from '@/lib/shippo'
+import { purchaseLabelForOrder } from '@/lib/shippo'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,22 +78,15 @@ export async function POST(request: NextRequest) {
 
           for (const order of shippableOrders || []) {
             try {
-              const txn = await shippoCreateTransaction(order.shippo_rate_id)
-              if (txn.status === 'SUCCESS') {
-                await admin
-                  .from('orders')
-                  .update({
-                    shippo_transaction_id: txn.object_id,
-                    label_url: txn.label_url ?? null,
-                    tracking_number: txn.tracking_number ?? null,
-                    tracking_url: txn.tracking_url_provider ?? null,
-                  })
-                  .eq('id', order.id)
-              } else {
-                console.error(
-                  `Shippo label purchase not successful for order ${order.id}: status=${txn.status}`,
-                  txn.messages || []
-                )
+              const result = await purchaseLabelForOrder(admin, {
+                id: order.id,
+                shippo_rate_id: order.shippo_rate_id,
+              })
+              if (result.ok === false) {
+                // Carrier-side failure (e.g. no billing method on the Shippo
+                // account): log and move on — the seller can retry manually
+                // from their orders page via POST /api/orders/[id]/label.
+                console.error(`Shippo label purchase failed for order ${order.id}: ${result.message}`)
               }
             } catch (labelError) {
               console.error(`Shippo label purchase failed for order ${order.id}:`, labelError)

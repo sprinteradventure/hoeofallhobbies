@@ -10,6 +10,50 @@ export default function SellerOrdersPage() {
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [labelBusy, setLabelBusy] = useState<string | null>(null)
+  const [labelErrors, setLabelErrors] = useState<Record<string, string>>({})
+
+  async function generateLabel(orderId: string) {
+    setLabelBusy(orderId)
+    setLabelErrors((prev) => ({ ...prev, [orderId]: '' }))
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Please sign in again.')
+
+      const res = await fetch(`/api/orders/${orderId}/label`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        // 502 carries the carrier's own message (e.g. missing billing
+        // method on the Shippo account) — show it verbatim.
+        throw new Error(data?.error || 'Label generation failed. Please try again.')
+      }
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                label_url: data.labelUrl ?? o.label_url,
+                tracking_number: data.trackingNumber ?? o.tracking_number,
+                tracking_url: data.trackingUrl ?? o.tracking_url,
+              }
+            : o
+        )
+      )
+    } catch (err) {
+      setLabelErrors((prev) => ({
+        ...prev,
+        [orderId]: err instanceof Error ? err.message : 'Label generation failed. Please try again.',
+      }))
+    } finally {
+      setLabelBusy(null)
+    }
+  }
 
   useEffect(() => {
     loadOrders()
@@ -25,7 +69,7 @@ export default function SellerOrdersPage() {
 
       const { data, error } = await supabase
         .from('orders')
-        .select('*, buyer:user_profiles(username, full_name)')
+        .select('*, buyer:user_profiles!orders_buyer_id_fkey(username, full_name)')
         .eq('seller_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -166,9 +210,21 @@ export default function SellerOrdersPage() {
                           Print shipping label (PDF)
                         </a>
                       ) : order.status === 'paid' && order.shippo_rate_id ? (
-                        <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 inline-block">
-                          Label pending — contact support
-                        </p>
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => generateLabel(order.id)}
+                            disabled={labelBusy === order.id}
+                            className="btn btn-primary py-2 px-4 text-sm inline-flex items-center gap-2 disabled:opacity-50"
+                          >
+                            <Truck className="h-4 w-4" />
+                            {labelBusy === order.id ? 'Generating label...' : 'Generate shipping label'}
+                          </button>
+                          {labelErrors[order.id] && (
+                            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                              {labelErrors[order.id]}
+                            </p>
+                          )}
+                        </div>
                       ) : null}
                     </div>
                   </div>
