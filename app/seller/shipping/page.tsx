@@ -20,11 +20,13 @@ export default function SellerShippingPage() {
     ship_city: '',
     ship_state: '',
     ship_zip: '',
+    ship_phone: '',
     default_length_in: '',
     default_width_in: '',
     default_height_in: '',
     default_weight_oz: '',
   })
+  const [accountEmail, setAccountEmail] = useState('')
 
   useEffect(() => {
     loadProfile()
@@ -37,11 +39,12 @@ export default function SellerShippingPage() {
         router.push('/auth/login')
         return
       }
+      setAccountEmail(user.email || '')
 
       const { data: profile } = await supabase
         .from('user_profiles')
         .select(
-          'ship_name, ship_street1, ship_street2, ship_city, ship_state, ship_zip, default_length_in, default_width_in, default_height_in, default_weight_oz'
+          'ship_name, ship_street1, ship_street2, ship_city, ship_state, ship_zip, ship_phone, default_length_in, default_width_in, default_height_in, default_weight_oz'
         )
         .eq('id', user.id)
         .single()
@@ -54,6 +57,7 @@ export default function SellerShippingPage() {
           ship_city: profile.ship_city || '',
           ship_state: profile.ship_state || '',
           ship_zip: profile.ship_zip || '',
+          ship_phone: profile.ship_phone || '',
           default_length_in: profile.default_length_in?.toString() || '',
           default_width_in: profile.default_width_in?.toString() || '',
           default_height_in: profile.default_height_in?.toString() || '',
@@ -211,6 +215,25 @@ export default function SellerShippingPage() {
                 <label className="label block mb-2">Country</label>
                 <input type="text" value="United States" className="input bg-ivory" disabled />
               </div>
+            </div>
+            <div>
+              <label className="label block mb-2">
+                Phone * <span className="text-taupe font-normal">(required by carriers for the shipping label)</span>
+              </label>
+              <input
+                type="tel"
+                name="ship_phone"
+                value={form.ship_phone}
+                onChange={handleChange}
+                placeholder="e.g. (555) 123-4567"
+                className="input"
+                required
+              />
+              {accountEmail && (
+                <p className="text-xs text-taupe mt-2">
+                  Labels use your account email: <span className="text-charcoal">{accountEmail}</span>
+                </p>
+              )}
             </div>
           </div>
         </div>

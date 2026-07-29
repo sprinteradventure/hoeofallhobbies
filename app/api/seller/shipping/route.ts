@@ -56,6 +56,17 @@ export async function POST(request: NextRequest) {
     update.ship_street2 = cleanText(body?.ship_street2)
     update.ship_country = cleanText(body?.ship_country) || 'US'
 
+    // Phone is optional but required by carriers (USPS) at label-purchase
+    // time. Loose format check when provided: 7-20 chars of digits/+-()/space.
+    const rawPhone = cleanText(body?.ship_phone)
+    if (rawPhone && !/^[0-9+\-() ]{7,20}$/.test(rawPhone)) {
+      return NextResponse.json(
+        { error: 'Phone must be 7–20 characters (digits, +, -, parentheses, spaces).' },
+        { status: 400 }
+      )
+    }
+    update.ship_phone = rawPhone
+
     // Default parcel is optional but each provided dimension must be a
     // positive number; invalid numbers are rejected rather than saved.
     const parcelFields = [

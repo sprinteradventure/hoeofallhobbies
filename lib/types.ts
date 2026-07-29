@@ -22,6 +22,7 @@ export interface UserProfile {
   ship_state?: string
   ship_zip?: string
   ship_country?: string
+  ship_phone?: string
   default_length_in?: number
   default_width_in?: number
   default_height_in?: number

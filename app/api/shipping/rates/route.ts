@@ -66,10 +66,12 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Seller ship-from + default parcel ----------------------------------
+    // email (account) + phone are selected too: USPS rejects label creation
+    // unless the from-address carries seller email or phone.
     const { data: seller, error: sellerError } = await admin
       .from('user_profiles')
       .select(
-        'id, username, ship_name, ship_street1, ship_street2, ship_city, ship_state, ship_zip, ship_country, default_length_in, default_width_in, default_height_in, default_weight_oz'
+        'id, username, email, ship_name, ship_street1, ship_street2, ship_city, ship_state, ship_zip, ship_country, ship_phone, default_length_in, default_width_in, default_height_in, default_weight_oz'
       )
       .eq('id', sellerId)
       .single()
@@ -136,6 +138,8 @@ export async function POST(request: NextRequest) {
           state: seller.ship_state,
           zip: seller.ship_zip,
           country: seller.ship_country || 'US',
+          email: seller.email || undefined,
+          phone: seller.ship_phone || undefined,
           validate: true,
         },
         addressTo: {
