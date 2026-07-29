@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { shippoGetRate, shippoGetShipment, ShippoError } from '@/lib/shippo'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,9 +58,40 @@ export async function POST(request: NextRequest) {
     // Optional shipping address collected by the checkout form, plus the
     // optional seller scope for per-seller checkout.
     const body = await request.json().catch(() => ({}))
-    const shippingAddress = body?.shippingAddress ?? null
     const requestedSellerId =
       typeof body?.seller_id === 'string' ? body.seller_id : null
+
+    // Real shipping selection from /api/shipping/rates. When present we
+    // re-verify the rate with Shippo and charge ITS amount — the client's
+    // quoted price is never trusted. Absent = legacy flow (items only).
+    const shipping =
+      body?.shipping && typeof body.shipping === 'object'
+        ? {
+            shipmentId: typeof body.shipping.shipmentId === 'string' ? body.shipping.shipmentId : null,
+            rateId: typeof body.shipping.rateId === 'string' ? body.shipping.rateId : null,
+            address: body.shipping.address ?? null,
+          }
+        : null
+
+    // Normalize the shipping address for the order row. The checkout page
+    // form is the single source of truth (Stripe address collection is
+    // intentionally NOT enabled on the session). Both the new
+    // {name, street1, street2, ...} shape and the legacy
+    // {fullName, address, ...} shape map to the same stored keys so older
+    // order views keep rendering.
+    const rawAddress = shipping?.address ?? body?.shippingAddress ?? null
+    const shippingAddress = rawAddress
+      ? {
+          fullName: rawAddress.fullName ?? rawAddress.name ?? null,
+          address: rawAddress.address ?? rawAddress.street1 ?? null,
+          address2: rawAddress.address2 ?? rawAddress.street2 ?? null,
+          city: rawAddress.city ?? null,
+          state: rawAddress.state ?? null,
+          zip: rawAddress.zip ?? null,
+          phone: rawAddress.phone ?? null,
+          country: rawAddress.country ?? 'US',
+        }
+      : null
 
     // --- Load the buyer's cart server-side (never trust client prices) -----
     const { data: cartItems, error: cartError } = await admin
@@ -130,6 +162,88 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // --- Verify the chosen Shippo rate server-side (never trust the client) --
+    // The rate's own amount is what the buyer is charged for shipping. We
+    // also confirm the rate belongs to the quoted shipment and that the
+    // shipment's destination matches the address submitted with this order.
+    let verifiedShipping: {
+      rateId: string
+      shipmentId: string
+      amountDollars: number
+      amountCents: number
+      serviceLevel: string
+      estimatedDays: number
+    } | null = null
+
+    if (shipping) {
+      if (
+        !shipping.shipmentId ||
+        !shipping.rateId ||
+        !shippingAddress?.city ||
+        !shippingAddress?.state ||
+        !shippingAddress?.zip
+      ) {
+        return NextResponse.json(
+          { error: 'Please choose a shipping option before checking out.', code: 'SHIPPING_REQUIRED' },
+          { status: 400 }
+        )
+      }
+
+      try {
+        const rate = await shippoGetRate(shipping.rateId)
+        if (rate.shipment !== shipping.shipmentId) {
+          return NextResponse.json(
+            { error: 'That shipping option is no longer valid. Please re-select shipping.', code: 'SHIPPING_RATE_MISMATCH' },
+            { status: 400 }
+          )
+        }
+
+        const shippoShipment = await shippoGetShipment(shipping.shipmentId)
+        const to = shippoShipment?.address_to ?? {}
+        const zip5 = (z: unknown) => String(z ?? '').replace(/\D/g, '').slice(0, 5)
+        const sameText = (a: unknown, b: unknown) =>
+          String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase()
+        const addressMatches =
+          sameText(to.city, shippingAddress.city) &&
+          sameText(to.state, shippingAddress.state) &&
+          zip5(to.zip) === zip5(shippingAddress.zip)
+
+        if (!addressMatches) {
+          return NextResponse.json(
+            { error: 'The shipping address changed after rates were quoted. Please re-select shipping.', code: 'SHIPPING_ADDRESS_MISMATCH' },
+            { status: 400 }
+          )
+        }
+
+        const amountDollars = parseFloat(rate.amount)
+        if (!Number.isFinite(amountDollars) || amountDollars <= 0) {
+          throw new ShippoError('Shipping provider returned an invalid rate amount.')
+        }
+
+        const estimatedDays = typeof rate.estimated_days === 'number' && rate.estimated_days > 0
+          ? rate.estimated_days
+          : 3
+
+        verifiedShipping = {
+          rateId: rate.object_id,
+          shipmentId: shipping.shipmentId,
+          amountDollars,
+          amountCents: Math.round(amountDollars * 100),
+          serviceLevel: `${rate.provider} ${rate.servicelevel?.name || rate.servicelevel?.token || 'Standard'}`,
+          estimatedDays,
+        }
+      } catch (err) {
+        if (err instanceof ShippoError) {
+          console.error('Shippo rate verification failed:', err.message)
+          return NextResponse.json(
+            { error: 'Shipping is temporarily unavailable. Please try again in a moment.' },
+            { status: 502 }
+          )
+        }
+        throw err
+      }
+    }
+
     // --- Decrement stock atomically per item (refuses to oversell) ---------
     for (const item of scopedItems) {
       const { data: decremented, error: stockError } = await admin.rpc(
@@ -174,6 +288,10 @@ export async function POST(request: NextRequest) {
           total_price: totalPrice,
           platform_fee: platformFee,
           shipping_address: shippingAddress,
+          shipping_cost: verifiedShipping?.amountDollars ?? null,
+          shipping_service_level: verifiedShipping?.serviceLevel ?? null,
+          shippo_shipment_id: verifiedShipping?.shipmentId ?? null,
+          shippo_rate_id: verifiedShipping?.rateId ?? null,
           status: 'payment_pending',
         })
         .select()
@@ -226,6 +344,27 @@ export async function POST(request: NextRequest) {
       })),
       automatic_tax: { enabled: automaticTaxEnabled },
       ...(automaticTaxEnabled ? { customer_update: { address: 'auto' as const } } : {}),
+      // The verified Shippo rate becomes the session's single shipping
+      // option. NOTE: shipping_address_collection is intentionally NOT set —
+      // our checkout form is the one source of truth for the address, which
+      // is stored on the order row above.
+      ...(verifiedShipping
+        ? {
+            shipping_options: [
+              {
+                shipping_rate_data: {
+                  type: 'fixed_amount' as const,
+                  fixed_amount: { amount: verifiedShipping.amountCents, currency: 'usd' },
+                  display_name: verifiedShipping.serviceLevel,
+                  delivery_estimate: {
+                    minimum: { unit: 'business_day' as const, value: verifiedShipping.estimatedDays },
+                    maximum: { unit: 'business_day' as const, value: verifiedShipping.estimatedDays + 3 },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
       payment_intent_data: {
         application_fee_amount: applicationFeeCents,
         transfer_data: { destination: destinationAccount },

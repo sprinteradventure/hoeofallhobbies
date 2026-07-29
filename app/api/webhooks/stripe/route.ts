@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { shippoCreateTransaction } from '@/lib/shippo'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,6 +63,45 @@ export async function POST(request: NextRequest) {
           .in('id', orderIds)
 
         if (error) throw error
+
+        // --- Buy Shippo labels for orders that checked out with real rates --
+        // CRITICAL: label failures must never fail the webhook. Each order is
+        // handled independently; on failure the order stays 'paid' with null
+        // label fields so it can be followed up manually.
+        try {
+          const { data: shippableOrders } = await admin
+            .from('orders')
+            .select('id, shippo_rate_id')
+            .in('id', orderIds)
+            .not('shippo_rate_id', 'is', null)
+            .is('shippo_transaction_id', null)
+
+          for (const order of shippableOrders || []) {
+            try {
+              const txn = await shippoCreateTransaction(order.shippo_rate_id)
+              if (txn.status === 'SUCCESS') {
+                await admin
+                  .from('orders')
+                  .update({
+                    shippo_transaction_id: txn.object_id,
+                    label_url: txn.label_url ?? null,
+                    tracking_number: txn.tracking_number ?? null,
+                    tracking_url: txn.tracking_url_provider ?? null,
+                  })
+                  .eq('id', order.id)
+              } else {
+                console.error(
+                  `Shippo label purchase not successful for order ${order.id}: status=${txn.status}`,
+                  txn.messages || []
+                )
+              }
+            } catch (labelError) {
+              console.error(`Shippo label purchase failed for order ${order.id}:`, labelError)
+            }
+          }
+        } catch (labelQueryError) {
+          console.error('Shippo label step failed (orders remain paid):', labelQueryError)
+        }
 
         // Payment succeeded — clear the buyer's purchased items (stock was
         // already decremented when the checkout session was created). Only

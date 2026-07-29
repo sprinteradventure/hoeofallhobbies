@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { CartItem } from '@/lib/types'
-import { Truck, CreditCard, MapPin, Package, ChevronRight, Shield, Store, AlertCircle } from 'lucide-react'
+import { Truck, CreditCard, MapPin, Package, ChevronRight, Shield, Store, AlertCircle, RefreshCw } from 'lucide-react'
 
 type SellerInfo = {
   username?: string | null
@@ -18,6 +18,23 @@ type SellerGroup = {
   subtotal: number
 }
 
+type RateOption = {
+  rateId: string
+  carrier: string
+  serviceLevel: string
+  amount: number
+  currency: string
+  estimatedDays: number | null
+}
+
+type GroupRates = {
+  status: 'loading' | 'ready' | 'error' | 'not_setup'
+  shipmentId?: string
+  rates?: RateOption[]
+  selectedRateId?: string
+  message?: string
+}
+
 export default function CheckoutPage() {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
@@ -27,14 +44,14 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false)
   const [processingSeller, setProcessingSeller] = useState<string | null>(null)
   const [fullName, setFullName] = useState('')
-  const [address, setAddress] = useState('')
+  const [street1, setStreet1] = useState('')
+  const [street2, setStreet2] = useState('')
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [zip, setZip] = useState('')
-  const [phone, setPhone] = useState('')
-  const [shippingMethod, setShippingMethod] = useState('standard')
   const [checkoutError, setCheckoutError] = useState('')
   const [groupErrors, setGroupErrors] = useState<Record<string, string>>({})
+  const [groupRates, setGroupRates] = useState<Record<string, GroupRates>>({})
 
   useEffect(() => {
     fetchCart()
@@ -77,6 +94,117 @@ export default function CheckoutPage() {
     }
   }
 
+  // --------------------------------------------------------------------------
+  // Real shipping rates (Shippo). Once the address is complete we quote each
+  // seller group independently; a failure in one group never blocks others.
+  // Any address edit invalidates quotes and re-fetches (debounced).
+  // --------------------------------------------------------------------------
+  const addressComplete = [fullName, street1, city, state, zip].every((v) => v.trim().length > 0)
+
+  const buyerAddress = {
+    name: fullName.trim(),
+    street1: street1.trim(),
+    street2: street2.trim() || undefined,
+    city: city.trim(),
+    state: state.trim(),
+    zip: zip.trim(),
+  }
+
+  const cartSellerIds = Array.from(
+    new Set(cartItems.map((item: any) => item.product?.seller_id).filter(Boolean))
+  ) as string[]
+
+  useEffect(() => {
+    if (!addressComplete || cartSellerIds.length === 0) {
+      setGroupRates({})
+      return
+    }
+    const timer = setTimeout(() => {
+      fetchAllRates(cartSellerIds)
+    }, 600)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullName, street1, street2, city, state, zip, cartItems])
+
+  async function fetchAllRates(sellerIds: string[]) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    setGroupRates((prev) => {
+      const next: Record<string, GroupRates> = {}
+      for (const id of sellerIds) next[id] = { status: 'loading' }
+      return next
+    })
+
+    await Promise.all(
+      sellerIds.map(async (sellerId) => {
+        try {
+          const res = await fetch('/api/shipping/rates', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ seller_id: sellerId, address: buyerAddress }),
+          })
+          const data = await res.json().catch(() => ({}))
+
+          if (res.status === 409 && data?.code === 'SELLER_SHIPPING_NOT_SETUP') {
+            setGroupRates((prev) => ({
+              ...prev,
+              [sellerId]: { status: 'not_setup', message: data.error },
+            }))
+            return
+          }
+          if (!res.ok || !Array.isArray(data?.rates) || data.rates.length === 0) {
+            setGroupRates((prev) => ({
+              ...prev,
+              [sellerId]: {
+                status: 'error',
+                message: data?.error || 'Shipping unavailable, try again',
+              },
+            }))
+            return
+          }
+
+          const rates = data.rates as RateOption[]
+          const cheapest = [...rates].sort((a, b) => a.amount - b.amount)[0]
+          setGroupRates((prev) => ({
+            ...prev,
+            [sellerId]: {
+              status: 'ready',
+              shipmentId: data.shipmentId,
+              rates,
+              selectedRateId: cheapest.rateId,
+            },
+          }))
+        } catch {
+          setGroupRates((prev) => ({
+            ...prev,
+            [sellerId]: { status: 'error', message: 'Shipping unavailable, try again' },
+          }))
+        }
+      })
+    )
+  }
+
+  function selectRate(sellerId: string, rateId: string) {
+    setGroupRates((prev) => ({
+      ...prev,
+      [sellerId]: { ...prev[sellerId], selectedRateId: rateId },
+    }))
+  }
+
+  function selectedRate(sellerId: string): RateOption | null {
+    const g = groupRates[sellerId]
+    if (!g || g.status !== 'ready' || !g.rates) return null
+    return g.rates.find((r) => r.rateId === g.selectedRateId) || null
+  }
+
+  function groupReadyToCheckout(sellerId: string): boolean {
+    return addressComplete && selectedRate(sellerId) !== null
+  }
+
   async function handleCheckout(sellerId?: string) {
     setProcessing(true)
     setProcessingSeller(sellerId ?? null)
@@ -89,20 +217,29 @@ export default function CheckoutPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not authenticated')
 
-      const shippingAddress = { fullName, address, city, state, zip, phone, method: shippingMethod }
+      // Attach the buyer-selected Shippo rate. The server re-fetches the rate
+      // from Shippo and charges ITS amount — the quoted price shown here is
+      // never trusted. sellerId always identifies the group (single-seller
+      // carts pass it too, which the server accepts).
+      const shippingSelection = sellerId
+        ? (() => {
+            const g = groupRates[sellerId]
+            const rate = selectedRate(sellerId)
+            if (!g?.shipmentId || !rate) return null
+            return { shipmentId: g.shipmentId, rateId: rate.rateId, address: buyerAddress }
+          })()
+        : null
 
-      // The server loads the cart, checks/decrements stock, creates
-      // payment_pending orders + order_items, and returns a Stripe Checkout
-      // URL. Prices are computed server-side from the database. When
-      // sellerId is passed, only that seller's items are checked out (a
-      // Stripe session can pay out to exactly one connected account).
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ shippingAddress, seller_id: sellerId ?? null }),
+        body: JSON.stringify({
+          seller_id: sellerId ?? null,
+          ...(shippingSelection ? { shipping: shippingSelection } : {}),
+        }),
       })
 
       const data = await res.json().catch(() => ({}))
@@ -148,7 +285,7 @@ export default function CheckoutPage() {
     // Single-seller carts keep the classic one-button flow. Multi-seller
     // carts use per-group buttons (type="button") below instead.
     if (sellerGroups.length === 1) {
-      handleCheckout(undefined)
+      handleCheckout(sellerGroups[0].sellerId)
     }
   }
 
@@ -162,9 +299,6 @@ export default function CheckoutPage() {
   const total = cartItems.reduce((sum, item) => {
     return sum + ((item.product as any)?.price || 0) * item.quantity
   }, 0)
-
-  const shippingEstimate = shippingMethod === 'express' ? 15.00 : 5.99
-  const grandTotal = total + shippingEstimate
 
   // Group cart items by seller shop.
   const groupsMap = new Map<string, CartItem[]>()
@@ -180,12 +314,92 @@ export default function CheckoutPage() {
   }))
   const isMultiSeller = sellerGroups.length > 1
 
+  const selectedShippingTotal = sellerGroups.reduce(
+    (sum, group) => sum + (selectedRate(group.sellerId)?.amount || 0),
+    0
+  )
+  const grandTotal = total + selectedShippingTotal
+
   function sellerName(sellerId: string) {
     return sellerInfo[sellerId]?.username || 'this seller'
   }
 
   function sellerPayoutsReady(sellerId: string) {
     return sellerInfo[sellerId]?.stripe_payouts_enabled === true
+  }
+
+  function groupTotal(group: SellerGroup): number {
+    return group.subtotal + (selectedRate(group.sellerId)?.amount || 0)
+  }
+
+  function renderRates(sellerId: string) {
+    const g = groupRates[sellerId]
+
+    if (!addressComplete) {
+      return (
+        <p className="text-xs text-taupe italic">
+          Enter your shipping address above to see real carrier rates.
+        </p>
+      )
+    }
+    if (!g || g.status === 'loading') {
+      return <p className="text-xs text-taupe italic">Fetching live shipping rates...</p>
+    }
+    if (g.status === 'not_setup') {
+      return (
+        <div className="flex gap-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+          <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-yellow-800">{g.message}</p>
+        </div>
+      )
+    }
+    if (g.status === 'error') {
+      return (
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-red-50 border border-red-200">
+          <p className="text-xs text-red-700">{g.message || 'Shipping unavailable, try again'}</p>
+          <button
+            type="button"
+            onClick={() => fetchAllRates([sellerId])}
+            className="btn btn-ghost py-1.5 px-3 text-xs border border-red-200 flex items-center gap-1"
+          >
+            <RefreshCw className="h-3 w-3" />
+            Try again
+          </button>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-2">
+        {g.rates!.map((rate) => (
+          <label
+            key={rate.rateId}
+            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+              g.selectedRateId === rate.rateId ? 'border-gold bg-gold/5' : 'border-blush'
+            }`}
+          >
+            <input
+              type="radio"
+              name={`shipping-${sellerId}`}
+              checked={g.selectedRateId === rate.rateId}
+              onChange={() => selectRate(sellerId, rate.rateId)}
+              className="w-4 h-4 accent-gold"
+            />
+            <div className="flex-1">
+              <p className="font-semibold text-charcoal text-sm">
+                {rate.carrier} {rate.serviceLevel}
+              </p>
+              <p className="text-xs text-taupe">
+                {rate.estimatedDays
+                  ? `Est. ${rate.estimatedDays} business day${rate.estimatedDays === 1 ? '' : 's'}`
+                  : 'Estimated delivery shown at checkout'}
+              </p>
+            </div>
+            <span className="font-bold text-charcoal">${rate.amount.toFixed(2)}</span>
+          </label>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -214,10 +428,17 @@ export default function CheckoutPage() {
                 <input
                   type="text"
                   placeholder="Street Address *"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  value={street1}
+                  onChange={(e) => setStreet1(e.target.value)}
                   className="input"
                   required
+                />
+                <input
+                  type="text"
+                  placeholder="Apt, suite, etc. (optional)"
+                  value={street2}
+                  onChange={(e) => setStreet2(e.target.value)}
+                  className="input"
                 />
                 <div className="grid grid-cols-2 gap-3">
                   <input
@@ -246,73 +467,15 @@ export default function CheckoutPage() {
                     className="input"
                     required
                   />
-                  <input
-                    type="tel"
-                    placeholder="Phone (optional)"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="input"
-                  />
                 </div>
               </div>
             </div>
 
-            {/* Shipping Method */}
-            <div className="card">
-              <div className="flex items-center gap-2 mb-5">
-                <Truck className="h-5 w-5 text-gold" />
-                <h2 className="font-cormorant text-xl font-bold text-charcoal">Shipping Method</h2>
-              </div>
-              <div className="space-y-3">
-                <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  shippingMethod === 'standard' ? 'border-gold bg-gold/5' : 'border-blush'
-                }`}>
-                  <input
-                    type="radio"
-                    name="shipping"
-                    value="standard"
-                    checked={shippingMethod === 'standard'}
-                    onChange={(e) => setShippingMethod(e.target.value)}
-                    className="w-4 h-4 accent-gold"
-                  />
-                  <div className="flex-1">
-                    <p className="font-semibold text-charcoal">Standard Shipping</p>
-                    <p className="text-sm text-taupe">5-7 business days</p>
-                  </div>
-                  <span className="font-bold text-charcoal">$5.99</span>
-                </label>
-
-                <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  shippingMethod === 'express' ? 'border-gold bg-gold/5' : 'border-blush'
-                }`}>
-                  <input
-                    type="radio"
-                    name="shipping"
-                    value="express"
-                    checked={shippingMethod === 'express'}
-                    onChange={(e) => setShippingMethod(e.target.value)}
-                    className="w-4 h-4 accent-gold"
-                  />
-                  <div className="flex-1">
-                    <p className="font-semibold text-charcoal">Express Shipping</p>
-                    <p className="text-sm text-taupe">2-3 business days</p>
-                  </div>
-                  <span className="font-bold text-charcoal">$15.00</span>
-                </label>
-
-                <div className="bg-ivory rounded-lg p-4 border border-blush">
-                  <p className="text-sm text-taupe">
-                    <span className="font-semibold text-charcoal">Note:</span> The seller will generate a shipping label and provide tracking once the order is processed. You can configure preferred carriers in your account settings.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment */}
+            {/* Payment + per-seller shipping selection */}
             <div className="card">
               <div className="flex items-center gap-2 mb-5">
                 <CreditCard className="h-5 w-5 text-gold" />
-                <h2 className="font-cormorant text-xl font-bold text-charcoal">Payment</h2>
+                <h2 className="font-cormorant text-xl font-bold text-charcoal">Shipping & Payment</h2>
               </div>
               <div className="bg-ivory rounded-lg p-5 border border-blush">
                 <div className="flex items-center gap-3 mb-3">
@@ -332,9 +495,9 @@ export default function CheckoutPage() {
                 {isMultiSeller ? (
                   <div className="space-y-4">
                     <p className="text-sm text-taupe">
-                      Your cart has items from {sellerGroups.length} sellers. Each seller is paid
-                      directly, so you&apos;ll check out with each one separately — the shipping
-                      details above are used for all of them.
+                      Your cart has items from {sellerGroups.length} sellers. Each seller ships and
+                      is paid separately, so you&apos;ll check out with each one — pick a shipping
+                      option for each shop below.
                     </p>
                     {sellerGroups.map((group) => {
                       const ready = sellerPayoutsReady(group.sellerId)
@@ -351,19 +514,38 @@ export default function CheckoutPage() {
                                 {group.items.length} item{group.items.length === 1 ? '' : 's'}
                               </span>
                             </div>
-                            <p className="font-bold text-charcoal">${group.subtotal.toFixed(2)}</p>
+                            <div className="text-right">
+                              <p className="font-bold text-charcoal">${groupTotal(group).toFixed(2)}</p>
+                              {selectedRate(group.sellerId) && (
+                                <p className="text-xs text-taupe">
+                                  ${group.subtotal.toFixed(2)} + ${selectedRate(group.sellerId)!.amount.toFixed(2)} shipping
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mb-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Truck className="h-4 w-4 text-gold" />
+                              <p className="text-xs font-semibold text-taupe uppercase tracking-wide">
+                                Shipping from {sellerName(group.sellerId)}
+                              </p>
+                            </div>
+                            {renderRates(group.sellerId)}
                           </div>
 
                           {ready ? (
                             <button
                               type="button"
                               onClick={() => handleGroupCheckout(group.sellerId)}
-                              disabled={processing}
-                              className="btn btn-primary w-full py-3"
+                              disabled={processing || !groupReadyToCheckout(group.sellerId)}
+                              className="btn btn-primary w-full py-3 disabled:opacity-50"
                             >
                               {processing && processingSeller === group.sellerId
                                 ? 'Redirecting to Payment...'
-                                : `Checkout with this seller — $${group.subtotal.toFixed(2)}`}
+                                : groupReadyToCheckout(group.sellerId)
+                                  ? `Checkout with this seller — $${groupTotal(group).toFixed(2)}`
+                                  : 'Choose a shipping option above'}
                             </button>
                           ) : (
                             <div className="flex gap-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
@@ -397,13 +579,38 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                     ) : (
-                      <button
-                        type="submit"
-                        disabled={processing}
-                        className="btn btn-primary w-full py-3.5"
-                      >
-                        {processing ? 'Redirecting to Payment...' : 'Place Order'}
-                      </button>
+                      <>
+                        {sellerGroups.length === 1 && (
+                          <div className="mb-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Truck className="h-4 w-4 text-gold" />
+                              <p className="text-xs font-semibold text-taupe uppercase tracking-wide">
+                                Shipping Options
+                              </p>
+                            </div>
+                            {renderRates(sellerGroups[0].sellerId)}
+                          </div>
+                        )}
+                        <button
+                          type="submit"
+                          disabled={
+                            processing ||
+                            (sellerGroups.length === 1 && !groupReadyToCheckout(sellerGroups[0].sellerId))
+                          }
+                          className="btn btn-primary w-full py-3.5 disabled:opacity-50"
+                        >
+                          {processing
+                            ? 'Redirecting to Payment...'
+                            : sellerGroups.length === 1 && groupReadyToCheckout(sellerGroups[0].sellerId)
+                              ? `Place Order — $${groupTotal(sellerGroups[0]).toFixed(2)}`
+                              : 'Place Order'}
+                        </button>
+                        {sellerGroups.length === 1 && groupErrors[sellerGroups[0].sellerId] && (
+                          <div className="mt-3 p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
+                            {groupErrors[sellerGroups[0].sellerId]}
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}
@@ -446,6 +653,16 @@ export default function CheckoutPage() {
                       </p>
                     </div>
                   ))}
+                  {selectedRate(group.sellerId) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-taupe">
+                        Shipping — {selectedRate(group.sellerId)!.carrier} {selectedRate(group.sellerId)!.serviceLevel}
+                      </span>
+                      <span className="text-charcoal">
+                        ${selectedRate(group.sellerId)!.amount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -456,11 +673,15 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-taupe">Shipping</span>
-                <span className="text-charcoal">${shippingEstimate.toFixed(2)}</span>
+                {selectedShippingTotal > 0 ? (
+                  <span className="text-charcoal">${selectedShippingTotal.toFixed(2)}</span>
+                ) : (
+                  <span className="text-taupe italic">Select options above</span>
+                )}
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-taupe">Tax</span>
-                <span className="text-taupe">Calculated</span>
+                <span className="text-taupe">Calculated at checkout</span>
               </div>
             </div>
             <div className="flex justify-between text-xl font-bold pt-4 border-t border-blush">
@@ -469,8 +690,8 @@ export default function CheckoutPage() {
             </div>
             {isMultiSeller && (
               <p className="text-xs text-taupe mt-3">
-                Checked out per seller — each seller&apos;s button above shows their items&apos;
-                subtotal. Shipping is settled with each seller.
+                Checked out per seller — each seller&apos;s button shows their items plus the
+                shipping option you picked for them.
               </p>
             )}
           </div>

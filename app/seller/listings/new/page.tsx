@@ -25,6 +25,10 @@ export default function NewListingPage() {
     condition: CONDITIONS[0],
     quantity: '1',
     tags: '',
+    weight_oz: '',
+    length_in: '',
+    width_in: '',
+    height_in: '',
   })
 
   const availableSubcategories = getSubcategoriesForCategory(formData.category)
@@ -50,6 +54,10 @@ export default function NewListingPage() {
           condition: formData.condition,
           quantity: parseInt(formData.quantity),
           tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+          weight_oz: parseFloat(formData.weight_oz),
+          length_in: formData.length_in ? parseFloat(formData.length_in) : null,
+          width_in: formData.width_in ? parseFloat(formData.width_in) : null,
+          height_in: formData.height_in ? parseFloat(formData.height_in) : null,
           is_active: true,
           images: imageUrls.length > 0 ? imageUrls : [],
         })
@@ -273,11 +281,62 @@ export default function NewListingPage() {
         {/* Shipping Info */}
         <div className="space-y-4">
           <h2 className="font-cormorant text-xl font-bold text-charcoal border-b border-blush pb-3">Shipping</h2>
-          <div className="bg-ivory rounded-lg p-4 border border-blush">
-            <p className="text-sm text-taupe">
-              <span className="font-semibold text-charcoal">Shipping setup:</span> You can configure shipping labels and carriers from your 
-              <Link href="/seller/dashboard" className="text-gold hover:underline ml-1">Seller Dashboard</Link> after creating this listing. 
-              Buyers will see "Shipping calculated at checkout" until you set up your preferred carrier.
+
+          <div>
+            <label className="label block mb-2">Weight (oz) *</label>
+            <input
+              type="number"
+              name="weight_oz"
+              value={formData.weight_oz}
+              onChange={handleChange}
+              placeholder="e.g. 8"
+              step="0.1"
+              min="0.1"
+              className="input"
+              required
+            />
+            <p className="text-xs text-taupe mt-2">
+              Packed weight of one unit. Used to calculate real carrier rates for buyers at checkout.
+            </p>
+          </div>
+
+          <div>
+            <label className="label block mb-2">Package Dimensions (inches, optional)</label>
+            <div className="grid grid-cols-3 gap-3">
+              <input
+                type="number"
+                name="length_in"
+                value={formData.length_in}
+                onChange={handleChange}
+                placeholder="Length"
+                step="0.1"
+                min="0"
+                className="input"
+              />
+              <input
+                type="number"
+                name="width_in"
+                value={formData.width_in}
+                onChange={handleChange}
+                placeholder="Width"
+                step="0.1"
+                min="0"
+                className="input"
+              />
+              <input
+                type="number"
+                name="height_in"
+                value={formData.height_in}
+                onChange={handleChange}
+                placeholder="Height"
+                step="0.1"
+                min="0"
+                className="input"
+              />
+            </div>
+            <p className="text-xs text-taupe mt-2">
+              Leave blank to use your default parcel from
+              <Link href="/seller/shipping" className="text-gold hover:underline ml-1">Shipping Settings</Link>.
             </p>
           </div>
         </div>

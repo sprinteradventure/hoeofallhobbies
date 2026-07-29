@@ -123,9 +123,26 @@ export default function OrdersPage() {
                         <span>On the way</span>
                       </div>
                     )}
+                    {order.shipping_service_level && (
+                      <div className="text-xs text-taupe">
+                        Ships via: <span className="text-charcoal">{order.shipping_service_level}</span>
+                      </div>
+                    )}
                     {order.tracking_number && (
                       <div className="text-xs text-taupe">
-                        Tracking: <span className="font-mono">{order.tracking_number}</span>
+                        Tracking:{' '}
+                        {order.tracking_url ? (
+                          <a
+                            href={order.tracking_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono text-gold hover:underline"
+                          >
+                            {order.tracking_number}
+                          </a>
+                        ) : (
+                          <span className="font-mono">{order.tracking_number}</span>
+                        )}
                       </div>
                     )}
                     {order.status === 'delivered' && (

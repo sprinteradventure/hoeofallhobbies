@@ -144,11 +144,52 @@ export default function SellerOrdersPage() {
                   </div>
                 )}
 
+                {/* Shipping service + label */}
+                {order.shipping_service_level && (
+                  <div className="border-t border-blush pt-4 mb-4">
+                    <p className="text-xs text-taupe uppercase tracking-wider mb-1">Shipping</p>
+                    <p className="text-sm text-charcoal">
+                      {order.shipping_service_level}
+                      {order.shipping_cost != null && (
+                        <span className="text-taupe"> — paid by buyer: ${Number(order.shipping_cost).toFixed(2)}</span>
+                      )}
+                    </p>
+                    <div className="mt-2">
+                      {order.label_url ? (
+                        <a
+                          href={order.label_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-primary py-2 px-4 text-sm inline-flex items-center gap-2"
+                        >
+                          <Truck className="h-4 w-4" />
+                          Print shipping label (PDF)
+                        </a>
+                      ) : order.status === 'paid' && order.shippo_rate_id ? (
+                        <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 inline-block">
+                          Label pending — contact support
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
                 {/* Tracking */}
                 {order.tracking_number && (
                   <div className="border-t border-blush pt-4 mb-4">
                     <p className="text-xs text-taupe uppercase tracking-wider mb-1">Tracking</p>
-                    <p className="font-mono text-sm text-gold">{order.tracking_number}</p>
+                    {order.tracking_url ? (
+                      <a
+                        href={order.tracking_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-sm text-gold hover:underline"
+                      >
+                        {order.tracking_number}
+                      </a>
+                    ) : (
+                      <p className="font-mono text-sm text-gold">{order.tracking_number}</p>
+                    )}
                   </div>
                 )}
 

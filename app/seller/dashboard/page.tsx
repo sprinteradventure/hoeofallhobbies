@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { TrendingUp, Package, DollarSign, AlertCircle, ShoppingBag, Star, Users, Wallet, X } from 'lucide-react'
+import { TrendingUp, Package, DollarSign, AlertCircle, ShoppingBag, Star, Users, Wallet, Truck, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { UserProfile } from '@/lib/types'
 import { SELLER_KEEP_PERCENT } from '@/lib/categories'
@@ -15,6 +15,7 @@ export default function SellerDashboard() {
   const [loading, setLoading] = useState(true)
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [payoutBannerDismissed, setPayoutBannerDismissed] = useState(false)
+  const [shippingBannerDismissed, setShippingBannerDismissed] = useState(false)
 
   useEffect(() => {
     loadDashboard()
@@ -136,6 +137,36 @@ export default function SellerDashboard() {
         </div>
       )}
 
+      {(() => {
+        const shippingSetupDone = !!(
+          profile?.ship_street1 && profile?.ship_city && profile?.ship_state && profile?.ship_zip
+        )
+        return !shippingBannerDismissed && profile && !shippingSetupDone ? (
+          <div className="mb-8 card bg-ivory border-gold/40 relative">
+            <button
+              onClick={() => setShippingBannerDismissed(true)}
+              className="absolute top-3 right-3 text-taupe hover:text-charcoal transition-colors"
+              aria-label="Dismiss shipping setup reminder"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="flex gap-3">
+              <Truck className="h-5 w-5 text-gold flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-charcoal">Complete your shipping setup</h3>
+                <p className="text-sm text-taupe mb-3">
+                  Add your ship-from address so buyers see real carrier rates at checkout and
+                  labels can be generated automatically for paid orders.
+                </p>
+                <Link href="/seller/shipping" className="btn btn-primary px-5 py-2 text-sm">
+                  Set up shipping
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : null
+      })()}
+
       {/* Stats Grid */}
       <div className="grid md:grid-cols-4 gap-6 mb-10">
         <div className="card">
@@ -203,6 +234,10 @@ export default function SellerDashboard() {
                 <Wallet className="h-4 w-4 mr-2" />
                 Payouts
               </Link>
+              <Link href="/seller/shipping" className="btn btn-ghost w-full py-2.5 border border-blush">
+                <Truck className="h-4 w-4 mr-2" />
+                Shipping
+              </Link>
               <Link href="/seller/listings" className="btn btn-ghost w-full py-2.5 border border-blush">
                 Manage Listings
               </Link>
@@ -236,10 +271,11 @@ export default function SellerDashboard() {
           <div className="card bg-ivory">
             <h2 className="font-cormorant text-xl font-bold text-charcoal mb-2">Shipping Setup</h2>
             <p className="text-sm text-taupe mb-4">
-              Configure your shipping labels and carrier preferences here when you're ready.
+              Set your ship-from address and default parcel so buyers get real carrier rates and
+              labels generate automatically.
             </p>
-            <Link href="/seller/orders" className="btn btn-ghost w-full py-2 border border-blush text-sm">
-              View Orders to Ship
+            <Link href="/seller/shipping" className="btn btn-ghost w-full py-2 border border-blush text-sm">
+              Manage Shipping Settings
             </Link>
           </div>
         </div>
