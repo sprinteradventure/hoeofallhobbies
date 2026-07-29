@@ -130,11 +130,19 @@ export async function POST(request: NextRequest) {
       const account = event.data.object as any
       const admin = getSupabaseAdmin()
 
+      const payoutsEnabled = !!(account.payouts_enabled && account.charges_enabled)
+
       const { error } = await admin
         .from('user_profiles')
         .update({
           stripe_onboarding_complete: !!account.details_submitted,
-          stripe_payouts_enabled: !!(account.payouts_enabled && account.charges_enabled),
+          stripe_payouts_enabled: payoutsEnabled,
+          // Receiving payouts means Stripe completed full KYC during Connect
+          // onboarding — that IS our seller verification. (Never auto-revoke:
+          // payout flaps shouldn't strip a verified badge.)
+          ...(payoutsEnabled
+            ? { seller_verified: true, verification_status: 'verified' }
+            : {}),
         })
         .eq('stripe_account_id', account.id)
 

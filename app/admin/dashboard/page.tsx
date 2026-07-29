@@ -110,15 +110,23 @@ export default function AdminDashboard() {
     <div className="mx-auto max-w-7xl px-4 py-12">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-4xl font-bold">Admin Dashboard</h1>
-        <Link
-          href="/admin/moderation"
-          className="btn btn-primary px-4 py-2 text-sm flex items-center gap-2"
-        >
-          Moderation Queue
-          {openReports !== null && (
-            <span className="badge badge-gold">{openReports} open</span>
-          )}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/sellers"
+            className="btn btn-ghost border border-blush px-4 py-2 text-sm"
+          >
+            Sellers
+          </Link>
+          <Link
+            href="/admin/moderation"
+            className="btn btn-primary px-4 py-2 text-sm flex items-center gap-2"
+          >
+            Moderation Queue
+            {openReports !== null && (
+              <span className="badge badge-gold">{openReports} open</span>
+            )}
+          </Link>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4 mb-4">

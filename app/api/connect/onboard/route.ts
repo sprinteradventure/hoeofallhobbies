@@ -154,6 +154,11 @@ export async function GET(request: NextRequest) {
             .update({
               stripe_onboarding_complete: onboardingComplete,
               stripe_payouts_enabled: payoutsEnabled,
+              // Stripe KYC passed = verified seller (same rule as the
+              // account.updated webhook; never auto-revoke here).
+              ...(payoutsEnabled
+                ? { seller_verified: true, verification_status: 'verified' }
+                : {}),
             })
             .eq('id', profile.id)
         }
