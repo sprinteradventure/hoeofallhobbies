@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
-import { Upload, Plus, X, ChevronDown } from 'lucide-react'
+import ImageUploader from '@/components/ImageUploader'
 
 const CONDITIONS = ['new', 'like-new', 'used', 'damaged']
 
@@ -14,7 +14,6 @@ export default function NewListingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([])
-  const [imageInput, setImageInput] = useState('')
 
   const [formData, setFormData] = useState({
     title: '',
@@ -80,17 +79,6 @@ export default function NewListingPage() {
     }))
   }
 
-  function addImage() {
-    if (imageInput.trim()) {
-      setImageUrls([...imageUrls, imageInput.trim()])
-      setImageInput('')
-    }
-  }
-
-  function removeImage(index: number) {
-    setImageUrls(imageUrls.filter((_, i) => i !== index))
-  }
-
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <div className="mb-8">
@@ -108,37 +96,7 @@ export default function NewListingPage() {
         {/* Images */}
         <div className="space-y-4">
           <h2 className="font-cormorant text-xl font-bold text-charcoal border-b border-blush pb-3">Product Images</h2>
-          
-          <div className="flex gap-2">
-            <input
-              type="url"
-              placeholder="Image URL (e.g., from Cloudinary, Imgur...)"
-              value={imageInput}
-              onChange={(e) => setImageInput(e.target.value)}
-              className="input flex-1"
-              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addImage())}
-            />
-            <button type="button" onClick={addImage} className="btn btn-ghost border border-blush px-4">
-              <Plus className="h-4 w-4" />
-            </button>
-          </div>
-          
-          {imageUrls.length > 0 && (
-            <div className="flex flex-wrap gap-3">
-              {imageUrls.map((url, i) => (
-                <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden border border-blush">
-                  <img src={url} alt={`Preview ${i + 1}`} className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(i)}
-                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <ImageUploader value={imageUrls} onChange={setImageUrls} />
         </div>
 
         {/* Basic Info */}
