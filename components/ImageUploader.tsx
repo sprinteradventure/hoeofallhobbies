@@ -1,13 +1,14 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { uploadToStorage } from '@/lib/uploadMedia'
 import { Upload, Plus, X, Loader2 } from 'lucide-react'
 
 // ============================================================================
 // ImageUploader — primary file-picker upload + secondary URL paste.
-// Uploads go through POST /api/upload (Supabase Storage, sellers only).
-// Controlled component: owns no submission logic, just the URL list.
+// Uploads go direct-to-storage via signed URLs from /api/upload/sign
+// (bypasses the ~4.5 MB serverless body cap). Controlled component: owns no
+// submission logic, just the URL list.
 // ============================================================================
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
@@ -45,28 +46,17 @@ export default function ImageUploader({
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        setError('Please sign in again to upload photos.')
-        return
-      }
-
       setUploadingCount(files.length)
       const uploaded = await Promise.all(
         files.map(async (file) => {
           try {
-            const formData = new FormData()
-            formData.append('file', file)
-            const res = await fetch('/api/upload', {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${session.access_token}` },
-              body: formData,
-            })
-            const data = await res.json().catch(() => ({}))
-            if (!res.ok || !data?.url) {
-              throw new Error(data?.error || `Couldn't upload "${file.name}".`)
-            }
-            return data.url as string
+            return await uploadToStorage('image', file)
+          } catch (err) {
+            throw new Error(
+              err instanceof Error && err.message
+                ? err.message
+                : `Couldn't upload "${file.name}".`
+            )
           } finally {
             setUploadingCount((n) => n - 1)
           }

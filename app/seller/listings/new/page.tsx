@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
 import ImageUploader from '@/components/ImageUploader'
+import VideoUploader from '@/components/VideoUploader'
 
 const CONDITIONS = ['new', 'like-new', 'used', 'damaged']
 
@@ -14,6 +15,7 @@ export default function NewListingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([])
 
@@ -84,6 +86,7 @@ export default function NewListingPage() {
           height_in: formData.height_in ? parseFloat(formData.height_in) : null,
           is_active: true,
           images: imageUrls.length > 0 ? imageUrls : [],
+          video_url: videoUrl,
         })
 
       if (insertError) throw insertError
@@ -121,6 +124,12 @@ export default function NewListingPage() {
         <div className="space-y-4">
           <h2 className="font-cormorant text-xl font-bold text-charcoal border-b border-blush pb-3">Product Images</h2>
           <ImageUploader value={imageUrls} onChange={setImageUrls} />
+        </div>
+
+        {/* Video */}
+        <div className="space-y-4">
+          <h2 className="font-cormorant text-xl font-bold text-charcoal border-b border-blush pb-3">Product Video <span className="text-taupe text-sm font-normal">(optional)</span></h2>
+          <VideoUploader value={videoUrl} onChange={setVideoUrl} />
         </div>
 
         {/* Basic Info */}

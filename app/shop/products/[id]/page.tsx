@@ -224,6 +224,18 @@ export default function ProductDetailPage() {
                 ))}
               </div>
             )}
+
+            {product.video_url && (
+              <div className="rounded-2xl overflow-hidden border border-blush bg-black shadow-sm">
+                <video
+                  src={product.video_url}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full max-h-[480px]"
+                />
+              </div>
+            )}
           </div>
 
           {/* Product Details */}
