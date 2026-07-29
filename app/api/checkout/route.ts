@@ -20,10 +20,12 @@ export const dynamic = 'force-dynamic'
 //      seller's share on the platform.
 //   5. Decrement stock atomically per item (refuses to oversell -> 409).
 //   6. Create the order + order_items rows with status 'payment_pending',
-//      plus the 5% platform fee bookkeeping.
+//      plus platform fee bookkeeping: 5% of the items subtotal PLUS the
+//      buyer's shipping payment (the platform buys the Shippo label, so the
+//      shipping money must stay with the platform, not the seller).
 //   7. Create a Stripe Checkout Session as a destination charge:
-//      95% transfers to the seller's Express account, 5% stays with the
-//      platform via application_fee_amount.
+//      the seller's Express account receives exactly 95% of the items
+//      subtotal; the platform keeps 5% + shipping via application_fee_amount.
 //
 // The webhook (/api/webhooks/stripe) flips orders to 'paid' on
 // checkout.session.completed and clears the purchased cart items.
@@ -276,7 +278,12 @@ export async function POST(request: NextRequest) {
         (sum, item) => sum + (item.product as any).price * item.quantity,
         0
       )
-      const platformFee = Math.round(totalPrice * PLATFORM_FEE_PERCENT) / 100
+      // Platform fee = 5% of the items subtotal PLUS the shipping payment
+      // (the platform purchases the Shippo label, so shipping stays with the
+      // platform). The seller nets exactly 95% of the items subtotal.
+      const platformFee =
+        Math.round(totalPrice * PLATFORM_FEE_PERCENT) / 100 +
+        (verifiedShipping?.amountDollars ?? 0)
 
       const { data: order, error: orderError } = await admin
         .from('orders')
@@ -321,7 +328,16 @@ export async function POST(request: NextRequest) {
       (sum, item) => sum + Math.round((item.product as any).price * 100) * item.quantity,
       0
     )
-    const applicationFeeCents = Math.round((subtotalCents * PLATFORM_FEE_PERCENT) / 100)
+    // application_fee_amount = 5% of items subtotal + the shipping payment.
+    // Stripe then transfers (charge total - fee) = exactly 95% of the items
+    // subtotal to the seller. The fee can never exceed the charge total by
+    // construction (charge = items + shipping); clamp defensively anyway.
+    const shippingAmountCents = verifiedShipping?.amountCents ?? 0
+    const chargeTotalCents = subtotalCents + shippingAmountCents
+    const applicationFeeCents = Math.min(
+      Math.round((subtotalCents * PLATFORM_FEE_PERCENT) / 100) + shippingAmountCents,
+      chargeTotalCents
+    )
 
     // Exactly one seller per session (enforced above).
     const destinationAccount = sellerById.get(scopedSellerIds[0])!.stripe_account_id as string

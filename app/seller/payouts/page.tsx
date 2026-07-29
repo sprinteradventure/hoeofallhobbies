@@ -151,8 +151,9 @@ export default function SellerPayoutsPage() {
             <p>
               <span className="font-semibold text-charcoal">How it works:</span> Hoe of All Hobbies
               uses Stripe Connect. When a buyer purchases your item, {SELLER_KEEP_PERCENT}% of the
-              sale goes straight to your Stripe account and {100 - SELLER_KEEP_PERCENT}% stays with
-              the platform. Stripe pays out to your bank on its standard schedule.
+              item price goes straight to your Stripe account and {100 - SELLER_KEEP_PERCENT}% stays with
+              the platform. Shipping the buyer pays is retained by the platform to purchase your
+              shipping label automatically. Stripe pays out to your bank on its standard schedule.
             </p>
             <p>
               Payout setup is handled securely by Stripe — we never see or store your bank details.

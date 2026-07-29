@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       { data: users, error: usersError },
       { data: products, error: productsError },
     ] = await Promise.all([
-      admin.from('orders').select('total_price, platform_fee, status'),
+      admin.from('orders').select('total_price, platform_fee, shipping_cost, status'),
       admin.from('user_profiles').select('id, is_seller'),
       admin.from('products').select('id, is_active'),
     ])
@@ -36,9 +36,12 @@ export async function GET(request: NextRequest) {
     if (usersError) throw usersError
     if (productsError) throw productsError
 
-    // Revenue breakdown. Platform commission is 5% of order totals (owner
-    // decision, June 2026); orders carry a platform_fee column (migration 006)
-    // written at checkout. 'Paid or later' = the buyer actually paid, so
+    // Revenue breakdown. Platform commission is 5% of order item totals
+    // (owner decision, June 2026) PLUS the buyer's shipping payment — the
+    // platform buys the Shippo label, so shipping stays with the platform.
+    // orders.platform_fee (migration 006) stores exactly that for new orders;
+    // total_price is items-only, so shipping_cost is added to gross sales.
+    // 'Paid or later' = the buyer actually paid, so
     // payment_pending/disputed/refunded/cancelled orders are excluded.
     const PAID_STATUSES = ['paid', 'shipped', 'delivered', 'completed']
     const allOrders = orders || []
@@ -47,12 +50,14 @@ export async function GET(request: NextRequest) {
     )
 
     const grossSales = paidOrdersList.reduce(
-      (sum, o) => sum + (o.total_price || 0),
+      (sum, o) => sum + (o.total_price || 0) + ((o as any).shipping_cost || 0),
       0
     )
     const platformFees = paidOrdersList.reduce(
       (sum, o) =>
-        sum + (o.platform_fee != null ? o.platform_fee : (o.total_price || 0) * 0.05),
+        sum + (o.platform_fee != null
+          ? o.platform_fee
+          : (o.total_price || 0) * 0.05 + ((o as any).shipping_cost || 0)),
       0
     )
     const sellerPayouts = grossSales - platformFees
