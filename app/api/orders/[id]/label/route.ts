@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin, getAdminUserFromToken } from '@/lib/supabase/admin'
-import { purchaseLabelForOrder } from '@/lib/shippo'
+import { purchaseLabelForOrder, requoteAndPurchaseLabel } from '@/lib/shippo'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,7 +37,9 @@ export async function POST(
     // --- Load the order -------------------------------------------------------
     const { data: order, error: orderError } = await admin
       .from('orders')
-      .select('id, seller_id, status, shippo_rate_id, shippo_transaction_id')
+      .select(
+        'id, seller_id, status, shippo_rate_id, shippo_transaction_id, shipping_address, shipping_service_level, shipping_cost'
+      )
       .eq('id', params.id)
       .single()
 
@@ -76,22 +78,50 @@ export async function POST(
       )
     }
 
-    // --- Buy the label (shared implementation with the webhook) ---------------
+    // --- Buy the label: direct against the stored rate first -----------------
     const result = await purchaseLabelForOrder(admin, {
       id: order.id,
       shippo_rate_id: order.shippo_rate_id,
     })
 
-    if (result.ok === false) {
-      // Surface the carrier's own message (billing errors, invalid rate,
-      // etc.) so the seller knows what to fix.
-      return NextResponse.json({ error: result.message }, { status: 502 })
+    if (result.ok !== false) {
+      console.log(`[label] order ${order.id}: label purchased via direct path (stored rate)`)
+      return NextResponse.json({
+        labelUrl: result.labelUrl,
+        trackingNumber: result.trackingNumber,
+        trackingUrl: result.trackingUrl,
+      })
     }
 
+    // --- Self-healing fallback: the stored shipment may be unusable ----------
+    // (created before the from-address carried email/phone, rate expired,
+    // etc.). Rebuild a fresh shipment from the seller's current profile +
+    // the order's address and retry once, price-checked against what the
+    // buyer paid.
+    console.warn(
+      `[label] order ${order.id}: direct purchase failed (${result.message}) — attempting re-quote fallback`
+    )
+
+    const fallback = await requoteAndPurchaseLabel(admin, {
+      id: order.id,
+      seller_id: order.seller_id,
+      shipping_address: order.shipping_address as Record<string, any> | null,
+      shipping_service_level: order.shipping_service_level,
+      shipping_cost: order.shipping_cost,
+    })
+
+    if (fallback.ok === false) {
+      // Surface the carrier's own message (billing errors, invalid rate,
+      // rate-increased, etc.) so the seller/admin knows what to fix.
+      console.error(`[label] order ${order.id}: re-quote fallback failed (${fallback.message})`)
+      return NextResponse.json({ error: fallback.message }, { status: 502 })
+    }
+
+    console.log(`[label] order ${order.id}: label purchased via re-quote fallback (fresh shipment)`)
     return NextResponse.json({
-      labelUrl: result.labelUrl,
-      trackingNumber: result.trackingNumber,
-      trackingUrl: result.trackingUrl,
+      labelUrl: fallback.labelUrl,
+      trackingNumber: fallback.trackingNumber,
+      trackingUrl: fallback.trackingUrl,
     })
   } catch (error) {
     console.error('Manual label generation error:', error)
