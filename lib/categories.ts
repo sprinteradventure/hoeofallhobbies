@@ -145,7 +145,7 @@ export const CATEGORIES: CategoryGroup[] = [
     ]
   },
   {
-    name: 'Seasonal Crafts',
+    name: 'Seasonal Crafts & Decor',
     slug: 'seasonal',
     description: 'Christmas, Halloween, Easter, fall harvest & patriotic',
     subcategories: [
