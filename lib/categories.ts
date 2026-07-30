@@ -93,6 +93,15 @@ export const CATEGORIES: CategoryGroup[] = [
     ]
   },
   {
+    name: 'Stained Glass Making',
+    slug: 'stained-glass',
+    description: 'Glass sheets, copper foil, lead came, solder, grinders & patterns',
+    subcategories: [
+      'Glass Sheets & Panels', 'Copper Foil', 'Lead Came', 'Solder & Flux',
+      'Glass Grinders', 'Glass Cutters & Tools', 'Patterns & Kits', 'Finishing Supplies'
+    ]
+  },
+  {
     name: 'Floral & Nature Crafts',
     slug: 'floral-nature',
     description: 'Artificial flowers, dried flowers, wreath supplies & pressed flowers',
@@ -177,6 +186,15 @@ export const CATEGORIES: CategoryGroup[] = [
     subcategories: [
       'Entire Craft Rooms', 'Estate Collections', 'Bulk Fabric Lots', 'Bulk Yarn Lots',
       'Business Liquidations', 'Mystery Boxes'
+    ]
+  },
+  {
+    name: 'Bulk Supplies',
+    slug: 'bulk-supplies',
+    description: 'Surplus t-shirts, apparel blanks, drinkware, tote bags & wholesale lots',
+    subcategories: [
+      'T-Shirt Blanks', 'Apparel Blanks', 'Tote & Bag Blanks', 'Hat & Cap Blanks',
+      'Drinkware Blanks', 'Surplus & Overstock Lots', 'Wholesale Packs'
     ]
   },
   {
