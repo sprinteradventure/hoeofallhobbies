@@ -15,7 +15,8 @@ export const CATEGORIES: CategoryGroup[] = [
       'Quilting Cotton', 'Apparel Fabric', 'Flannel', 'Fleece', 'Upholstery',
       'Specialty Fabrics', 'Fabric Bundles', 'Commercial Patterns', 'Vintage Patterns',
       'PDF Patterns', 'Thread', 'Zippers', 'Elastic', 'Bias Tape', 'Ribbon',
-      'Trim & Lace', 'Sewing Machines', 'Sergers', 'Cutting Tools', 'Pressing Tools', 'Misc'
+      'Trim & Lace', 'Sewing Machines', 'Sergers', 'Cutting Tools', 'Pressing Tools', 'Misc'
+    ]
   },
   {
     name: 'Yarn & Fiber Arts',
@@ -26,7 +27,8 @@ export const CATEGORIES: CategoryGroup[] = [
       'Yarn Lots', 'Knitting Needles', 'Stitch Markers', 'Knitting Kits',
       'Crochet Hooks', 'Crochet Patterns', 'Crochet Kits', 'Roving',
       'Spinning Wheels', 'Drop Spindles', 'Cross Stitch', 'Needlepoint',
-      'Embroidery', 'Punch Needle', 'Misc'
+      'Embroidery', 'Punch Needle', 'Misc'
+    ]
   },
   {
     name: 'Paper Crafts',
@@ -34,7 +36,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Scrapbooking, card making, journaling, stickers',
     subcategories: [
       'Scrapbooking', 'Card Making', 'Journaling', 'Stickers', 'Rubber Stamps',
-      'Dies & Embossing Folders', 'Cutting Machines', 'Craft Punches', 'Misc'
+      'Dies & Embossing Folders', 'Cutting Machines', 'Craft Punches', 'Misc'
+    ]
   },
   {
     name: 'Cricut & Cutting Machines',
@@ -42,14 +45,16 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Cricut, Silhouette, vinyl, transfer tape & blanks',
     subcategories: [
       'Cricut Supplies', 'Silhouette Supplies', 'Vinyl', 'Transfer Tape',
-      'Blanks', 'Tools & Accessories', 'Misc'
+      'Blanks', 'Tools & Accessories', 'Misc'
+    ]
   },
   {
     name: 'Art Supplies',
     slug: 'art-supplies',
     description: 'Paint, brushes, canvas, drawing supplies & easels',
     subcategories: [
-      'Paint', 'Brushes', 'Canvas', 'Drawing Supplies', 'Easels', 'Art Storage', 'Misc'
+      'Paint', 'Brushes', 'Canvas', 'Drawing Supplies', 'Easels', 'Art Storage', 'Misc'
+    ]
   },
   {
     name: 'Jewelry Making',
@@ -57,7 +62,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Beads, findings, wire, resin jewelry & metal stamping',
     subcategories: [
       'Beads', 'Findings', 'Wire', 'Resin Jewelry Supplies', 'Metal Stamping',
-      'Jewelry Tools', 'Jewelry Kits', 'Misc'
+      'Jewelry Tools', 'Jewelry Kits', 'Misc'
+    ]
   },
   {
     name: 'Resin & Molds',
@@ -65,7 +71,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Epoxy resin, UV resin, silicone molds, pigments & tumblers',
     subcategories: [
       'Epoxy Resin', 'UV Resin', 'Silicone Molds', 'Pigments', 'Glitter',
-      'Tumblers', 'Casting Supplies', 'Misc'
+      'Tumblers', 'Casting Supplies', 'Misc'
+    ]
   },
   {
     name: 'Clay & Pottery',
@@ -73,7 +80,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Polymer clay, air dry clay, ceramic supplies & glazes',
     subcategories: [
       'Polymer Clay', 'Air Dry Clay', 'Ceramic Supplies', 'Pottery Tools',
-      'Glazes', 'Clay Molds', 'Misc'
+      'Glazes', 'Clay Molds', 'Misc'
+    ]
   },
   {
     name: 'Candle & Soap Making',
@@ -81,7 +89,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Wax, wicks, fragrance oils, soap bases & colorants',
     subcategories: [
       'Wax', 'Wicks', 'Fragrance Oils', 'Candle Molds', 'Soap Bases',
-      'Colorants', 'Packaging', 'Misc'
+      'Colorants', 'Packaging', 'Misc'
+    ]
   },
   {
     name: 'Stained Glass Making',
@@ -89,7 +98,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Glass sheets, copper foil, lead came, solder, grinders & patterns',
     subcategories: [
       'Glass Sheets & Panels', 'Copper Foil', 'Lead Came', 'Solder & Flux',
-      'Glass Grinders', 'Glass Cutters & Tools', 'Patterns & Kits', 'Finishing Supplies', 'Misc'
+      'Glass Grinders', 'Glass Cutters & Tools', 'Patterns & Kits', 'Finishing Supplies', 'Misc'
+    ]
   },
   {
     name: 'Floral & Nature Crafts',
@@ -97,14 +107,16 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Artificial flowers, dried flowers, wreath supplies & pressed flowers',
     subcategories: [
       'Artificial Flowers', 'Dried Flowers', 'Wreath Supplies', 'Floral Foam',
-      'Pressed Flowers', 'Terrarium Supplies', 'Misc'
+      'Pressed Flowers', 'Terrarium Supplies', 'Misc'
+    ]
   },
   {
     name: 'Woodworking & DIY',
     slug: 'woodworking-diy',
     description: 'Wood blanks, wood burning, signs, paint & hardware',
     subcategories: [
-      'Wood Blanks', 'Wood Burning', 'Signs', 'Paint & Finishes', 'Hardware', 'DIY Kits', 'Misc'
+      'Wood Blanks', 'Wood Burning', 'Signs', 'Paint & Finishes', 'Hardware', 'DIY Kits', 'Misc'
+    ]
   },
   {
     name: 'Miniatures & Models',
@@ -112,7 +124,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Dollhouse miniatures, terrain building, model railroads & gaming scenery',
     subcategories: [
       'Dollhouse Miniatures', 'Terrain Building', 'Model Railroads', 'Plastic Models',
-      'Miniature Painting', 'Gaming Scenery', 'Misc'
+      'Miniature Painting', 'Gaming Scenery', 'Misc'
+    ]
   },
   {
     name: 'Cosplay & Costume Making',
@@ -120,7 +133,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Foam, Worbla, costume fabrics, props, wigs & accessories',
     subcategories: [
       'Foam', 'Worbla', 'Costume Fabrics', 'Props', 'Costume Patterns',
-      'Wigs & Accessories', 'Misc'
+      'Wigs & Accessories', 'Misc'
+    ]
   },
   {
     name: 'Sublimation & Printing',
@@ -128,21 +142,24 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Sublimation paper, ink, blanks, heat presses & accessories',
     subcategories: [
       'Sublimation Paper', 'Sublimation Ink', 'Sublimation Blanks', 'Heat Presses',
-      'Printing Accessories', 'Misc'
+      'Printing Accessories', 'Misc'
+    ]
   },
   {
     name: '3D Printing',
     slug: '3d-printing',
     description: 'Filament, resin, printers, parts & tools',
     subcategories: [
-      'Filament', '3D Resin', '3D Printers', 'Printer Parts', '3D Printing Tools', 'Misc'
+      'Filament', '3D Resin', '3D Printers', 'Printer Parts', '3D Printing Tools', 'Misc'
+    ]
   },
   {
     name: 'Seasonal Crafts & Decor',
     slug: 'seasonal',
     description: 'Christmas, Halloween, Easter, fall harvest & patriotic',
     subcategories: [
-      'Christmas', 'Halloween', 'Easter', 'Fall Harvest', "Valentine's Day", 'Patriotic', 'Misc'
+      'Christmas', 'Halloween', 'Easter', 'Fall Harvest', "Valentine's Day", 'Patriotic', 'Misc'
+    ]
   },
   {
     name: 'Vintage & Collectible Supplies',
@@ -150,7 +167,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Vintage buttons, fabric, patterns, retired scrapbooking & rare supplies',
     subcategories: [
       'Vintage Buttons', 'Vintage Fabric', 'Vintage Patterns', 'Retired Scrapbooking',
-      'Antique Sewing Items', 'Rare Supplies', 'Misc'
+      'Antique Sewing Items', 'Rare Supplies', 'Misc'
+    ]
   },
   {
     name: 'Unfinished Projects (UFOs)',
@@ -158,7 +176,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Sewing projects, quilt tops, knitting WIPs, scrapbook kits & more',
     subcategories: [
       'Sewing Projects', 'Quilt Tops', 'Knitting WIPs', 'Crochet WIPs',
-      'Scrapbook Kits', 'Model Kits', 'Mixed Media Projects', 'Misc'
+      'Scrapbook Kits', 'Model Kits', 'Mixed Media Projects', 'Misc'
+    ]
   },
   {
     name: 'Estate & Destash Sales',
@@ -166,7 +185,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Entire craft rooms, estate collections, bulk lots & mystery boxes',
     subcategories: [
       'Entire Craft Rooms', 'Estate Collections', 'Bulk Fabric Lots', 'Bulk Yarn Lots',
-      'Business Liquidations', 'Mystery Boxes', 'Misc'
+      'Business Liquidations', 'Mystery Boxes', 'Misc'
+    ]
   },
   {
     name: 'Bulk Supplies',
@@ -174,7 +194,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Surplus t-shirts, apparel blanks, drinkware, tote bags & wholesale lots',
     subcategories: [
       'T-Shirt Blanks', 'Apparel Blanks', 'Tote & Bag Blanks', 'Hat & Cap Blanks',
-      'Drinkware Blanks', 'Surplus & Overstock Lots', 'Wholesale Packs', 'Misc'
+      'Drinkware Blanks', 'Surplus & Overstock Lots', 'Wholesale Packs', 'Misc'
+    ]
   },
   {
     name: 'Tools & Equipment',
@@ -182,7 +203,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Sewing machines, Cricut machines, heat presses, looms & craft storage',
     subcategories: [
       'Sewing Machines', 'Cricut Machines', 'Heat Presses', 'Pottery Wheels',
-      'Looms', 'Embroidery Machines', 'Craft Storage', 'Misc'
+      'Looms', 'Embroidery Machines', 'Craft Storage', 'Misc'
+    ]
   },
   {
     name: 'Handmade Supplies',
@@ -190,7 +212,8 @@ export const CATEGORIES: CategoryGroup[] = [
     description: 'Hand-dyed yarn, handmade beads, custom molds & artisan fabric',
     subcategories: [
       'Hand-Dyed Yarn', 'Handmade Beads', 'Custom Molds', 'Handcrafted Findings',
-      'Artisan Fabric', 'Misc'
+      'Artisan Fabric', 'Misc'
+    ]
   },
   {
     name: 'Party',
@@ -199,14 +222,16 @@ export const CATEGORIES: CategoryGroup[] = [
     subcategories: [
       'Party Supplies', 'Balloons', 'Decorations', 'Tableware', 'Party Favors',
       'Backdrops', 'Invitations', 'Cake Supplies', 'Piñatas', 'Streamers & Banners',
-      'Themed Party Kits', 'Gift Bags & Wrap', 'Centerpieces', 'Misc'
+      'Themed Party Kits', 'Gift Bags & Wrap', 'Centerpieces', 'Misc'
+    ]
   },
   {
     name: 'Free & Trade',
     slug: 'free-trade',
     description: 'Free supplies, swap & trade, local pickup only',
     subcategories: [
-      'Free Supplies', 'Swap & Trade', 'Local Pickup Only', 'Misc'
+      'Free Supplies', 'Swap & Trade', 'Local Pickup Only', 'Misc'
+    ]
   }
 ]
 
