@@ -3,6 +3,7 @@ import { Cormorant, Lora, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, DEFAULT_OG_IMAGE } from '@/lib/site'
 
 const cormorant = Cormorant({
   subsets: ['latin'],
@@ -26,13 +27,22 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: 'Hoe of All Hobbies - Sustainable Craft Supplies Marketplace',
-  description: 'Discover and sell unique craft and hobby supplies on our curated marketplace.',
+  metadataBase: new URL(SITE_URL),
+  title: `${SITE_NAME} - Sustainable Craft Supplies Marketplace`,
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://www.hoeofallhobbies.com',
-    siteName: 'Hoe of All Hobbies',
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: SITE_NAME }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_NAME} - Sustainable Craft Supplies Marketplace`,
+    description: SITE_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
   },
 }
 

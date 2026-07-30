@@ -1,10 +1,34 @@
 import Link from 'next/link'
 import { CATEGORIES, getCategoryNames } from '@/lib/categories'
 import { ArrowRight, Search, ShoppingBag, Sparkles, Users, Shield, Truck } from 'lucide-react'
+import { SITE_NAME, SITE_URL } from '@/lib/site'
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/images/logo-of-all.png`,
+}
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_NAME,
+  url: SITE_URL,
+}
 
 export default function Home() {
   return (
     <div className="space-y-0">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-ivory via-cream to-blush px-4 py-12 sm:py-16">
         <div className="mx-auto max-w-5xl text-center">
