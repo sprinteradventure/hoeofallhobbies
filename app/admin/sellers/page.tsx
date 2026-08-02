@@ -9,6 +9,8 @@ type Seller = {
   id: string
   email: string | null
   username: string | null
+  seller_name: string | null
+  full_name: string | null
   full_name: string | null
   seller_verified: boolean
   verification_status: 'unverified' | 'pending' | 'verified'
@@ -66,7 +68,7 @@ export default function AdminSellersPage() {
 
   async function setVerified(seller: Seller, verified: boolean) {
     if (!verified) {
-      const name = seller.username || seller.email || 'this seller'
+      const name = seller.seller_name || seller.username || seller.email || 'this seller'
       if (!confirm(`Revoke the verified badge for ${name}?`)) return
     }
 
@@ -111,7 +113,7 @@ export default function AdminSellersPage() {
         )
       )
       setToast(
-        `${seller.username || seller.email || 'Seller'} ${verified ? 'verified' : 'unverified'}.`
+        `${seller.seller_name || seller.username || seller.email || 'Seller'} ${verified ? 'verified' : 'unverified'}.`
       )
     } catch (err) {
       console.error('Verify seller error:', err)
@@ -178,7 +180,7 @@ export default function AdminSellersPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-semibold text-charcoal">
-                      {seller.username || seller.full_name || 'Unnamed seller'}
+                      {seller.seller_name || seller.username || seller.full_name || 'Unnamed seller'}
                     </p>
                     {seller.seller_verified ? (
                       <span className="badge badge-green flex items-center gap-1">

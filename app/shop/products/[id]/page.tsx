@@ -119,7 +119,7 @@ export default async function ProductDetailPage({
         brand: product.seller
           ? {
               '@type': 'Brand',
-              name: product.seller.username || product.seller.full_name || 'Independent Seller',
+              name: product.seller.seller_name || product.seller.username || product.seller.full_name || 'Independent Seller',
             }
           : undefined,
         offers: {

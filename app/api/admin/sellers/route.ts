@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const { data: sellers, error } = await admin
       .from('user_profiles')
       .select(
-        'id, email, username, full_name, is_seller, seller_verified, verification_status, stripe_payouts_enabled, total_sales, avg_rating, created_at'
+        'id, email, username, seller_name, full_name, is_seller, seller_verified, verification_status, stripe_payouts_enabled, total_sales, avg_rating, created_at'
       )
       .eq('is_seller', true)
       .order('created_at', { ascending: false })

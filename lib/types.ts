@@ -3,6 +3,7 @@ export interface UserProfile {
   email: string
   username?: string
   full_name?: string
+  seller_name?: string
   avatar_url?: string
   bio?: string
   location?: string

@@ -5,13 +5,18 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { UserProfile } from '@/lib/types'
-import { User, Package, Store, LogOut, ShoppingBag } from 'lucide-react'
+import { User, Package, Store, LogOut, ShoppingBag, Edit2, Check, X } from 'lucide-react'
 
 export default function AccountPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  // ── Seller name editing ──
+  const [editingName, setEditingName] = useState(false)
+  const [sellerNameInput, setSellerNameInput] = useState('')
 
   useEffect(() => {
     loadAccount()
@@ -33,8 +38,31 @@ export default function AccountPage() {
         .single()
 
       setProfile(data)
+      setSellerNameInput(data?.seller_name || '')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function saveSellerName() {
+    if (!profile) return
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ seller_name: sellerNameInput.trim() || null })
+        .eq('id', profile.id)
+
+      if (error) throw error
+
+      setProfile((prev) =>
+        prev ? { ...prev, seller_name: sellerNameInput.trim() || undefined } : null
+      )
+      setEditingName(false)
+    } catch (err) {
+      alert('Failed to save seller name. Please try again.')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -50,7 +78,7 @@ export default function AccountPage() {
   }
 
   const displayName =
-    profile?.full_name || profile?.username || email.split('@')[0]
+    profile?.seller_name || profile?.full_name || profile?.username || email.split('@')[0]
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
@@ -64,7 +92,7 @@ export default function AccountPage() {
           <div className="w-14 h-14 rounded-full bg-ivory flex items-center justify-center flex-shrink-0">
             <User className="h-7 w-7 text-gold" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="font-cormorant text-xl font-bold text-charcoal">
               {displayName}
             </p>
@@ -74,6 +102,66 @@ export default function AccountPage() {
             )}
           </div>
         </div>
+
+        {/* Seller name editor (only for sellers) */}
+        {profile?.is_seller && (
+          <div className="mt-6 pt-6 border-t border-blush">
+            <label className="label block mb-2">Seller Display Name</label>
+            <p className="text-xs text-taupe mb-3">
+              This is the name buyers see on your listings. Leave blank to use your account name.
+            </p>
+
+            {editingName ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={sellerNameInput}
+                  onChange={(e) => setSellerNameInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveSellerName()
+                    if (e.key === 'Escape') {
+                      setEditingName(false)
+                      setSellerNameInput(profile?.seller_name || '')
+                    }
+                  }}
+                  placeholder="Your shop or brand name"
+                  className="input flex-1"
+                  maxLength={50}
+                  autoFocus
+                />
+                <button
+                  onClick={saveSellerName}
+                  disabled={saving}
+                  className="btn btn-primary px-4 py-2"
+                >
+                  <Check className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingName(false)
+                    setSellerNameInput(profile?.seller_name || '')
+                  }}
+                  className="btn btn-ghost border border-blush px-4 py-2"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="text-charcoal font-medium">
+                  {profile?.seller_name || 'Not set — using account name'}
+                </span>
+                <button
+                  onClick={() => setEditingName(true)}
+                  className="text-gold hover:underline text-sm inline-flex items-center gap-1"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Quick links */}

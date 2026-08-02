@@ -345,7 +345,7 @@ function ProductsPage() {
                       </h3>
                       {product.seller && (
                         <p className="text-xs text-taupe mb-3">
-                          by {product.seller.username || product.seller.full_name || 'Unknown'}
+                          by {product.seller.seller_name || product.seller.username || product.seller.full_name || 'Unknown'}
                         </p>
                       )}
                       <div className="flex items-center justify-between">

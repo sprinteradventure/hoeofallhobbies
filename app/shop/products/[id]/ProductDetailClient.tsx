@@ -279,7 +279,7 @@ export default function ProductDetailClient() {
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-charcoal">
-                        {product.seller.username || product.seller.full_name || 'Unknown Seller'}
+                        {product.seller.seller_name || product.seller.username || product.seller.full_name || 'Unknown Seller'}
                       </p>
                       {showVerifiedSellerChip && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gold/10 text-gold border border-gold/40">

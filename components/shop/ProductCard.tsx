@@ -51,7 +51,7 @@ export default function ProductCard({ product }: Props) {
 
           {product.seller && (
             <div className="text-xs text-neutral-600">
-              <p>by {(product.seller as any).username}</p>
+              <p>by {(product.seller as any).seller_name || (product.seller as any).username}</p>
               {(product.seller as any).avg_rating && (
                 <div className="flex items-center gap-1 mt-1">
                   <div className="flex gap-0.5">

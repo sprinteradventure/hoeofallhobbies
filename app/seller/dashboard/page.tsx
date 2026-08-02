@@ -77,6 +77,8 @@ export default function SellerDashboard() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>
 
+  const sellerDisplayName = profile?.seller_name || profile?.full_name || profile?.username || 'Your Shop'
+
   const statusColors: Record<string, string> = {
     pending: 'badge-yellow',
     payment_pending: 'badge-yellow',
@@ -93,7 +95,9 @@ export default function SellerDashboard() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="font-cormorant text-4xl font-bold text-charcoal">Seller Dashboard</h1>
-          <p className="text-taupe font-lora mt-1">You keep {SELLER_KEEP_PERCENT}% of every sale</p>
+          <p className="text-taupe font-lora mt-1">
+            {sellerDisplayName} · You keep {SELLER_KEEP_PERCENT}% of every sale
+          </p>
         </div>
         <Link href="/seller/listings" className="btn btn-primary px-6 py-2">
           Manage Listings
@@ -247,6 +251,10 @@ export default function SellerDashboard() {
           <div className="card">
             <h2 className="font-cormorant text-xl font-bold text-charcoal mb-4">Seller Info</h2>
             <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-taupe">Display Name</span>
+                <span className="font-semibold text-charcoal">{sellerDisplayName}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-taupe">Status</span>
                 <span className={`font-semibold ${profile?.seller_verified ? 'text-green-600' : 'text-yellow-600'}`}>
