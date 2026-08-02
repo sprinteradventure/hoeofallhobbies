@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
 // ============================================================================
 
 const BUCKET = 'product-images'
-const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
+const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 
 const ALLOWED_MIME: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
     if (image.size > MAX_BYTES) {
       return NextResponse.json(
-        { error: 'Image is too large — the limit is 5 MB.' },
+        { error: 'Image is too large — the limit is 10 MB.' },
         { status: 413 }
       )
     }

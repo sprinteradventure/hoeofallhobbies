@@ -12,7 +12,7 @@ import { Upload, Plus, X, Loader2 } from 'lucide-react'
 // ============================================================================
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-const MAX_BYTES = 5 * 1024 * 1024
+const MAX_BYTES = 10 * 1024 * 1024
 
 export default function ImageUploader({
   value,
@@ -40,7 +40,7 @@ export default function ImageUploader({
         return
       }
       if (file.size > MAX_BYTES) {
-        setError(`"${file.name}" is over 5 MB. Please choose a smaller image.`)
+        setError(`"${file.name}" is over 10 MB. Please choose a smaller image or compress it first.`)
         return
       }
     }
@@ -104,7 +104,7 @@ export default function ImageUploader({
         <p className="font-semibold text-charcoal">
           {uploading ? `Uploading ${uploadingCount} photo${uploadingCount === 1 ? '' : 's'}...` : 'Add photos'}
         </p>
-        <p className="text-xs text-taupe">JPEG, PNG, WebP or GIF — up to 5 MB each</p>
+        <p className="text-xs text-taupe">JPEG, PNG, WebP or GIF — up to 10 MB each</p>
       </button>
       <input
         ref={fileInputRef}
