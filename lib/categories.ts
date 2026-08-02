@@ -6,16 +6,19 @@ export interface CategoryGroup {
   description?: string
 }
 
+// Name of the category that supports user-created custom subcategories
+export const COLLECTIBLES_CATEGORY_NAME = 'Collectibles'
+
 export const CATEGORIES: CategoryGroup[] = [
   {
     name: 'Fabric & Sewing',
     slug: 'fabric-sewing',
-    description: 'Quilting cotton, apparel fabric, sewing machines & more',
+    description: 'Quilting cotton, apparel fabric, patterns, thread & notions',
     subcategories: [
       'Quilting Cotton', 'Apparel Fabric', 'Flannel', 'Fleece', 'Upholstery',
-      'Specialty Fabrics', 'Fabric Bundles', 'Commercial Patterns', 'Vintage Patterns',
+      'Specialty Fabrics', 'Fabric Bundles', 'Commercial Patterns',
       'PDF Patterns', 'Thread', 'Zippers', 'Elastic', 'Bias Tape', 'Ribbon',
-      'Trim & Lace', 'Sewing Machines', 'Sergers', 'Cutting Tools', 'Pressing Tools', 'Misc'
+      'Trim & Lace', 'Sergers', 'Cutting Tools', 'Pressing Tools', 'Misc'
     ]
   },
   {
@@ -161,6 +164,17 @@ export const CATEGORIES: CategoryGroup[] = [
       'Christmas', 'Halloween', 'Easter', 'Fall Harvest', "Valentine's Day", 'Patriotic', 'Misc'
     ]
   },
+  // ── Collectibles: user-created subcategories ─────────────────────────────
+  {
+    name: COLLECTIBLES_CATEGORY_NAME,
+    slug: 'collectibles',
+    description: 'Trading cards, figurines, memorabilia, and collectible items — create your own subcategory',
+    subcategories: [
+      'Trading Cards', 'Figurines', 'Memorabilia', 'Coins & Currency',
+      'Stamps', 'Comics', 'Action Figures', 'Dolls',
+      'Vinyl Records', 'Autographs', 'Other'
+    ]
+  },
   {
     name: 'Vintage & Collectible Supplies',
     slug: 'vintage-collectible',
@@ -200,9 +214,9 @@ export const CATEGORIES: CategoryGroup[] = [
   {
     name: 'Tools & Equipment',
     slug: 'tools-equipment',
-    description: 'Sewing machines, Cricut machines, heat presses, looms & craft storage',
+    description: 'Sewing machines, heat presses, pottery wheels, looms & craft storage',
     subcategories: [
-      'Sewing Machines', 'Cricut Machines', 'Heat Presses', 'Pottery Wheels',
+      'Sewing Machines', 'Heat Presses', 'Pottery Wheels',
       'Looms', 'Embroidery Machines', 'Craft Storage', 'Misc'
     ]
   },
@@ -216,7 +230,7 @@ export const CATEGORIES: CategoryGroup[] = [
     ]
   },
   {
-    name: 'Party',
+    name: 'Party & Celebrations',
     slug: 'party',
     description: 'Party supplies, balloons, decorations, tableware, favors & themed kits',
     subcategories: [
@@ -254,6 +268,11 @@ export function getCategoryBySlug(slug: string): CategoryGroup | undefined {
 
 export function getCategoryByName(name: string): CategoryGroup | undefined {
   return CATEGORIES.find(c => c.name === name)
+}
+
+// Check if a category supports user-created custom subcategories
+export function isCollectiblesCategory(name: string): boolean {
+  return name === COLLECTIBLES_CATEGORY_NAME
 }
 
 // Commission rate: 5% platform fee, 95% to seller

@@ -3,17 +3,30 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Trash2, Edit, Plus, Package, Eye } from 'lucide-react'
+import { Trash2, Edit, Plus, Package, Eye, AlertTriangle, Wallet, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
+
+type PayoutStatus = {
+  hasAccount: boolean
+  onboardingComplete: boolean
+  payoutsEnabled: boolean
+}
 
 export default function SellerListingsPage() {
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
+  // ── Payout status check ──────────────────────────────────────────────────
+  const [payoutStatus, setPayoutStatus] = useState<PayoutStatus | null>(null)
+  const [checkingPayouts, setCheckingPayouts] = useState(true)
+
   useEffect(() => {
-    loadListings()
+    async function init() {
+      await Promise.all([loadListings(), checkPayoutStatus()])
+    }
+    init()
   }, [])
 
   async function loadListings() {
@@ -37,7 +50,41 @@ export default function SellerListingsPage() {
     }
   }
 
+  async function checkPayoutStatus() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/auth/login')
+        return
+      }
+
+      const res = await fetch('/api/connect/onboard', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json().catch(() => ({}))
+
+      if (res.ok) {
+        setPayoutStatus(data)
+      }
+    } catch (err) {
+      console.error('Failed to check payout status:', err)
+    } finally {
+      setCheckingPayouts(false)
+    }
+  }
+
+  const payoutsReady = payoutStatus?.payoutsEnabled === true
+
   async function toggleActive(id: string, current: boolean) {
+    // Block activating if payouts aren't ready
+    if (!current && !payoutsReady) {
+      alert(
+        'You must complete your payout setup before reactivating this listing.\n\n' +
+        'Go to Seller Console → Payouts to connect your bank account.'
+      )
+      return
+    }
+
     try {
       const { error } = await supabase.from('products').update({ is_active: !current }).eq('id', id)
       if (error) throw error
@@ -70,11 +117,61 @@ export default function SellerListingsPage() {
           <h1 className="font-cormorant text-4xl font-bold text-charcoal">My Listings</h1>
           <p className="text-taupe font-lora mt-1">Manage your products across all categories</p>
         </div>
-        <Link href="/seller/listings/new" className="btn btn-primary px-6 py-2.5 flex items-center gap-2">
+        <Link
+          href="/seller/listings/new"
+          className={`btn px-6 py-2.5 flex items-center gap-2 ${
+            !payoutsReady && !checkingPayouts
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'btn btn-primary'
+          }`}
+          onClick={(e) => {
+            if (!payoutsReady && !checkingPayouts) {
+              e.preventDefault()
+              alert(
+                'You must complete your payout setup before creating a new listing.\n\n' +
+                'Go to Seller Console → Payouts to connect your bank account.'
+              )
+            }
+          }}
+        >
           <Plus className="h-4 w-4" />
           New Listing
         </Link>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          PAYOUT SETUP WARNING — shown when payouts are NOT ready
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {!checkingPayouts && !payoutsReady && (
+        <div className="mb-8 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+              <AlertTriangle className="h-6 w-6 text-yellow-700" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-cormorant text-xl font-bold text-yellow-900 mb-2">
+                Payout Setup Required to Sell
+              </h3>
+              <p className="text-sm text-yellow-800 mb-1 leading-relaxed">
+                <strong>Your listings are hidden from buyers until you set up payouts.</strong>
+                {' '}Connect your bank account with Stripe to start receiving payments.
+              </p>
+              <p className="text-sm text-yellow-700 mb-4 leading-relaxed">
+                Go to your <strong>Seller Console → Payouts</strong> and complete the Stripe onboarding.
+                It takes about 2 minutes.
+              </p>
+              <Link
+                href="/seller/payouts"
+                className="inline-flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+              >
+                <Wallet className="h-4 w-4" />
+                Go to Seller Console — Set Up Payouts
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {products.length === 0 ? (
         <div className="text-center py-16 card">
@@ -83,7 +180,23 @@ export default function SellerListingsPage() {
           </div>
           <p className="text-charcoal font-semibold mb-2">No listings yet</p>
           <p className="text-taupe text-sm mb-6">Create your first listing to start selling</p>
-          <Link href="/seller/listings/new" className="btn btn-primary px-6 py-2">
+          <Link
+            href="/seller/listings/new"
+            className={`btn px-6 py-2 ${
+              !payoutsReady && !checkingPayouts
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'btn btn-primary'
+            }`}
+            onClick={(e) => {
+              if (!payoutsReady && !checkingPayouts) {
+                e.preventDefault()
+                alert(
+                  'You must complete your payout setup before creating a listing.\n\n' +
+                  'Go to Seller Console → Payouts to connect your bank account.'
+                )
+              }
+            }}
+          >
             Create Your First Listing
           </Link>
         </div>
@@ -114,13 +227,23 @@ export default function SellerListingsPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => toggleActive(product.id, product.is_active)}
+                  title={
+                    !payoutsReady && !product.is_active
+                      ? 'Complete payout setup to reactivate'
+                      : product.is_active ? 'Deactivate' : 'Activate'
+                  }
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    product.is_active 
-                      ? 'bg-green-50 text-green-600 hover:bg-green-100' 
-                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    product.is_active
+                      ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                      : !payoutsReady && !checkingPayouts
+                        ? 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100 cursor-not-allowed'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                   }`}
                 >
                   {product.is_active ? 'Active' : 'Inactive'}
+                  {!payoutsReady && !product.is_active && !checkingPayouts && (
+                    <span className="ml-1 text-[10px]">(payouts needed)</span>
+                  )}
                 </button>
                 <Link
                   href={`/shop/products/${product.id}`}

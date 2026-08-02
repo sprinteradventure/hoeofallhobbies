@@ -1,14 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
-import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
+import { CATEGORIES, getSubcategoriesForCategory, isCollectiblesCategory, COLLECTIBLES_CATEGORY_NAME } from '@/lib/categories'
 import ImageUploader from '@/components/ImageUploader'
 import VideoUploader from '@/components/VideoUploader'
+import { Wallet, AlertTriangle, ExternalLink, Plus, Sparkles } from 'lucide-react'
 
 const CONDITIONS = ['new', 'like-new', 'used', 'damaged']
+
+type PayoutStatus = {
+  hasAccount: boolean
+  onboardingComplete: boolean
+  payoutsEnabled: boolean
+}
 
 export default function NewListingPage() {
   const router = useRouter()
@@ -18,6 +25,15 @@ export default function NewListingPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([])
+
+  // ── Payout status check ───────────────────────────────────────────────────
+  const [payoutStatus, setPayoutStatus] = useState<PayoutStatus | null>(null)
+  const [checkingPayouts, setCheckingPayouts] = useState(true)
+
+  // ── Collectibles custom subcategories ─────────────────────────────────────
+  const [customSubcategories, setCustomSubcategories] = useState<string[]>([])
+  const [newSubcategoryInput, setNewSubcategoryInput] = useState('')
+  const [addingSubcategory, setAddingSubcategory] = useState(false)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -32,11 +48,105 @@ export default function NewListingPage() {
     height_in: '',
   })
 
+  // Check payout status on mount
+  useEffect(() => {
+    async function checkPayoutStatus() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          router.push('/auth/login')
+          return
+        }
+
+        const res = await fetch('/api/connect/onboard', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        const data = await res.json().catch(() => ({}))
+
+        if (res.ok) {
+          setPayoutStatus(data)
+        }
+      } catch (err) {
+        console.error('Failed to check payout status:', err)
+      } finally {
+        setCheckingPayouts(false)
+      }
+    }
+
+    checkPayoutStatus()
+  }, [router])
+
+  // Load custom subcategories when Collectibles is selected
+  useEffect(() => {
+    if (selectedCategories.includes(COLLECTIBLES_CATEGORY_NAME)) {
+      loadCustomSubcategories()
+    }
+  }, [selectedCategories])
+
+  async function loadCustomSubcategories() {
+    try {
+      const res = await fetch('/api/categories/custom-subcategories')
+      const data = await res.json()
+      if (res.ok && data.subcategories) {
+        setCustomSubcategories(data.subcategories)
+      }
+    } catch (err) {
+      console.error('Failed to load custom subcategories:', err)
+    }
+  }
+
+  async function addCustomSubcategory() {
+    const name = newSubcategoryInput.trim()
+    if (!name) return
+
+    setAddingSubcategory(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setError('You must be logged in to create a subcategory.')
+        return
+      }
+
+      const res = await fetch('/api/categories/custom-subcategories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ name }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to create subcategory.')
+        return
+      }
+
+      // Add to local list and select it
+      setCustomSubcategories((prev) => {
+        const updated = [...prev, data.name].sort()
+        return updated
+      })
+      setSelectedSubcategories((prev) => [...prev, data.name])
+      setNewSubcategoryInput('')
+    } catch (err) {
+      setError('Failed to create subcategory. Please try again.')
+    } finally {
+      setAddingSubcategory(false)
+    }
+  }
+
+  const payoutsReady = payoutStatus?.payoutsEnabled === true
+
   function toggleCategory(name: string) {
     setSelectedCategories((prev) => {
       if (prev.includes(name)) {
-        // Removing a category also drops its subcategory selections.
         const removedSubs = new Set(getSubcategoriesForCategory(name))
+        // Also remove any custom subcategories if leaving Collectibles
+        if (isCollectiblesCategory(name)) {
+          customSubcategories.forEach((sub) => removedSubs.add(sub))
+        }
         setSelectedSubcategories((subs) => subs.filter((s) => !removedSubs.has(s)))
         return prev.filter((c) => c !== name)
       }
@@ -56,6 +166,13 @@ export default function NewListingPage() {
     setError('')
 
     try {
+      if (!payoutsReady) {
+        throw new Error(
+          'You must complete your payout setup before listing items. ' +
+          'Go to Seller Console → Payouts to connect your bank account.'
+        )
+      }
+
       if (selectedCategories.length === 0) {
         throw new Error('Please choose at least one category.')
       }
@@ -69,9 +186,6 @@ export default function NewListingPage() {
           seller_id: user.id,
           title: formData.title,
           description: formData.description,
-          // Legacy single-value columns keep every existing shop filter,
-          // search, and breadcrumb working: they hold the FIRST selection.
-          // The arrays carry the full multi-category selection.
           category: selectedCategories[0],
           subcategory: selectedSubcategories[0] || null,
           categories: selectedCategories,
@@ -106,12 +220,46 @@ export default function NewListingPage() {
     }))
   }
 
+  const hasCollectibles = selectedCategories.includes(COLLECTIBLES_CATEGORY_NAME)
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <div className="mb-8">
         <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">Create New Listing</h1>
         <p className="text-taupe font-lora">List your craft and hobby supplies. You keep 95% of every sale.</p>
       </div>
+
+      {/* Payout warning */}
+      {!checkingPayouts && !payoutsReady && (
+        <div className="mb-8 rounded-xl border-2 border-yellow-400 bg-yellow-50 p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+              <AlertTriangle className="h-6 w-6 text-yellow-700" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-cormorant text-xl font-bold text-yellow-900 mb-2">
+                Payout Setup Required Before Listing
+              </h3>
+              <p className="text-sm text-yellow-800 mb-1 leading-relaxed">
+                <strong>You cannot publish listings until you set up your payouts.</strong>
+                {' '}Buyers won't be able to purchase your items if your bank account isn't connected.
+              </p>
+              <p className="text-sm text-yellow-700 mb-4 leading-relaxed">
+                Go to your <strong>Seller Console → Payouts</strong> and complete the Stripe onboarding
+                to connect your bank account. It takes about 2 minutes.
+              </p>
+              <Link
+                href="/seller/payouts"
+                className="inline-flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+              >
+                <Wallet className="h-4 w-4" />
+                Go to Seller Console — Set Up Payouts
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 text-sm">
@@ -197,14 +345,19 @@ export default function NewListingPage() {
             <div className="space-y-3">
               <label className="label block">Subcategories <span className="text-taupe font-normal">(optional, pick any that fit)</span></label>
               {selectedCategories.map(catName => {
-                const subs = getSubcategoriesForCategory(catName)
-                if (subs.length === 0) return null
+                const baseSubs = getSubcategoriesForCategory(catName)
+                const extraSubs = isCollectiblesCategory(catName) ? customSubcategories : []
+                const allSubs = [...new Set([...baseSubs, ...extraSubs])]
+
+                if (allSubs.length === 0) return null
+
                 return (
                   <div key={catName} className="rounded-xl border border-blush bg-ivory/50 p-3">
                     <p className="text-xs font-semibold text-taupe uppercase tracking-wide mb-2">{catName}</p>
                     <div className="flex flex-wrap gap-2">
-                      {subs.map(sub => {
+                      {allSubs.map(sub => {
                         const selected = selectedSubcategories.includes(sub)
+                        const isCustom = isCollectiblesCategory(catName) && customSubcategories.includes(sub) && !baseSubs.includes(sub)
                         return (
                           <button
                             type="button"
@@ -217,10 +370,44 @@ export default function NewListingPage() {
                             }`}
                           >
                             {sub}
+                            {isCustom && <Sparkles className="inline h-3 w-3 ml-1 text-gold" />}
                           </button>
                         )
                       })}
                     </div>
+
+                    {/* ── Custom subcategory creator (only for Collectibles) ── */}
+                    {isCollectiblesCategory(catName) && (
+                      <div className="mt-3 pt-3 border-t border-blush/50">
+                        <p className="text-xs text-taupe mb-2">
+                          Don't see your type of collectible? Create a new subcategory — it will be available to all sellers.
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newSubcategoryInput}
+                            onChange={(e) => setNewSubcategoryInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                addCustomSubcategory()
+                              }
+                            }}
+                            placeholder="e.g. Pokémon Cards, Funko Pops, Hot Wheels..."
+                            className="input flex-1 text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={addCustomSubcategory}
+                            disabled={addingSubcategory || !newSubcategoryInput.trim()}
+                            className="btn btn-primary px-4 py-2 text-sm whitespace-nowrap"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            {addingSubcategory ? 'Adding...' : 'Add Type'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -364,10 +551,20 @@ export default function NewListingPage() {
         <div className="flex gap-4 pt-4 border-t border-blush">
           <button
             type="submit"
-            disabled={loading}
-            className="btn btn-primary flex-1 py-3"
+            disabled={loading || checkingPayouts || !payoutsReady}
+            className={`btn flex-1 py-3 ${
+              !payoutsReady && !checkingPayouts
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300'
+                : 'btn btn-primary'
+            }`}
           >
-            {loading ? 'Creating Listing...' : 'Create Listing'}
+            {checkingPayouts
+              ? 'Checking payout status...'
+              : !payoutsReady
+                ? 'Complete Payout Setup to Publish'
+                : loading
+                  ? 'Creating Listing...'
+                  : 'Create Listing'}
           </button>
           <Link href="/seller/listings" className="btn btn-secondary flex-1 py-3 text-center">
             Cancel
