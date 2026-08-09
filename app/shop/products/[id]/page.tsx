@@ -20,7 +20,7 @@ type ProductRow = {
   condition: string
   quantity: number
   images: string[] | null
-  seller: { username: string | null; full_name: string | null } | null
+  seller: { username: string | null; full_name: string | null; seller_name: string | null } | null
 }
 
 async function fetchProduct(id: string): Promise<ProductRow | null> {
@@ -28,7 +28,7 @@ async function fetchProduct(id: string): Promise<ProductRow | null> {
     const admin = getSupabaseAdmin()
     const { data, error } = await admin
       .from('products')
-      .select('id, title, description, price, condition, quantity, images, seller:user_profiles(username, full_name)')
+      .select('id, title, description, price, condition, quantity, images, seller:user_profiles(username, full_name, seller_name)')
       .eq('id', id)
       .single()
 

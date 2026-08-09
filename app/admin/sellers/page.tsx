@@ -11,7 +11,6 @@ type Seller = {
   username: string | null
   seller_name: string | null
   full_name: string | null
-  full_name: string | null
   seller_verified: boolean
   verification_status: 'unverified' | 'pending' | 'verified'
   stripe_payouts_enabled: boolean | null
