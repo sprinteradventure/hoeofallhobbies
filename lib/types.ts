@@ -114,3 +114,32 @@ export interface OrderItem {
   created_at: string
   product?: Product
 }
+
+export interface Conversation {
+  id: string
+  product_id: string
+  buyer_id: string
+  seller_id: string
+  created_at: string
+  updated_at: string
+  product?: Product
+}
+
+export interface ConversationSummary {
+  id: string
+  role: 'buyer' | 'seller'
+  updated_at: string
+  product: { id: string; title: string; image: string | null } | null
+  other_party: { id?: string; name: string }
+  last_message: { body: string; sender_id: string; created_at: string } | null
+  unread_count: number
+}
+
+export interface Message {
+  id: string
+  conversation_id?: string
+  sender_id: string
+  body: string
+  read_at?: string | null
+  created_at: string
+}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Heart, Share2, ShoppingCart, ArrowLeft, Star, Store, Truck, Flag, X, BadgeCheck } from 'lucide-react'
+import { Heart, Share2, ShoppingCart, ArrowLeft, Star, Store, Truck, Flag, X, BadgeCheck, MessageCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
@@ -35,6 +35,7 @@ export default function ProductDetailClient() {
   const [reportDetails, setReportDetails] = useState('')
   const [reportSubmitting, setReportSubmitting] = useState(false)
   const [reportMessage, setReportMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+  const [messagingSeller, setMessagingSeller] = useState(false)
 
   useEffect(() => {
     fetchProduct()
@@ -120,6 +121,35 @@ export default function ProductDetailClient() {
       alert('Failed to add to cart')
     } finally {
       setAddingToCart(false)
+    }
+  }
+
+  async function handleMessageSeller() {
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) {
+      router.push(`/auth/login?redirect=${encodeURIComponent(`/shop/products/${productId}`)}`)
+      return
+    }
+
+    setMessagingSeller(true)
+    try {
+      const res = await fetch('/api/messages/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ product_id: productId }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'Failed to start conversation.')
+      router.push(`/messages/${data.id}`)
+    } catch (err) {
+      console.error('Error starting conversation:', err)
+      alert(err instanceof Error ? err.message : 'Failed to start conversation')
+    } finally {
+      setMessagingSeller(false)
     }
   }
 
@@ -395,6 +425,18 @@ export default function ProductDetailClient() {
               <div className="card bg-red-50 border-red-200">
                 <p className="text-red-700 font-semibold">This item is currently out of stock</p>
               </div>
+            )}
+
+            {/* Message Seller — hidden from the seller viewing their own listing */}
+            {(!viewerId || viewerId !== product.seller_id) && (
+              <button
+                onClick={handleMessageSeller}
+                disabled={messagingSeller}
+                className="btn btn-secondary w-full py-3 flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="h-5 w-5" />
+                {messagingSeller ? 'Opening conversation...' : 'Message Seller'}
+              </button>
             )}
 
             <button className="btn btn-ghost w-full py-3 flex items-center justify-center gap-2 border border-blush">

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ShoppingCart, Menu, X, ChevronDown, ShieldCheck } from 'lucide-react'
+import { ShoppingCart, Menu, X, ChevronDown, ShieldCheck, MessageCircle } from 'lucide-react'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { SmallMonogram } from './BrandLogo'
 
@@ -10,6 +10,8 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [categoryOpen, setCategoryOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [unreadMessages, setUnreadMessages] = useState(0)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const pathname = usePathname()
   const menuRef = useRef<HTMLDivElement>(null)
@@ -152,6 +154,61 @@ export default function Navbar() {
     }
   }, [])
 
+  // ── Unread messages badge (light poll: on mount + every 60s) ────────────
+  useEffect(() => {
+    let cancelled = false
+    let interval: ReturnType<typeof setInterval> | null = null
+    let unsubscribe: (() => void) | null = null
+
+    async function checkUnread() {
+      try {
+        const { supabase } = await import('@/lib/supabase/client')
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          if (!cancelled) {
+            setIsLoggedIn(false)
+            setUnreadMessages(0)
+          }
+          return
+        }
+        if (!cancelled) setIsLoggedIn(true)
+        const res = await fetch('/api/messages/unread-count', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        if (!res.ok) return
+        const { unread } = await res.json()
+        if (!cancelled) setUnreadMessages(typeof unread === 'number' ? unread : 0)
+      } catch {
+        if (!cancelled) setUnreadMessages(0)
+      }
+    }
+
+    async function init() {
+      const { supabase } = await import('@/lib/supabase/client')
+      checkUnread()
+      interval = setInterval(checkUnread, 60000)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          if (!session) {
+            setIsLoggedIn(false)
+            setUnreadMessages(0)
+          } else {
+            checkUnread()
+          }
+        }
+      )
+      unsubscribe = () => subscription.unsubscribe()
+    }
+
+    init()
+
+    return () => {
+      cancelled = true
+      if (interval) clearInterval(interval)
+      unsubscribe?.()
+    }
+  }, [])
+
   const closeMenu = useCallback(() => {
     setIsOpen(false)
     setCategoryOpen(false)
@@ -199,6 +256,17 @@ export default function Navbar() {
             <Link href="/account" className="text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider underline-offset-8 decoration-gold/70 decoration-2 hover:underline">
               Account
             </Link>
+            {isLoggedIn && (
+              <Link href="/messages" className="relative text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider underline-offset-8 decoration-gold/70 decoration-2 hover:underline flex items-center gap-1.5">
+                <MessageCircle className="h-4 w-4" />
+                Inbox
+                {unreadMessages > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-gold text-white text-xs font-bold">
+                    {unreadMessages > 99 ? '99+' : unreadMessages}
+                  </span>
+                )}
+              </Link>
+            )}
             {isAdmin && (
               <div className="relative group">
                 <button className="flex items-center gap-2 text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider underline-offset-8 decoration-gold/70 decoration-2 hover:underline">
@@ -270,6 +338,17 @@ export default function Navbar() {
             <Link href="/account" onClick={closeMenu} className="block py-3 px-2 text-charcoal hover:bg-ivory rounded transition-colors font-lora">
               Account
             </Link>
+            {isLoggedIn && (
+              <Link href="/messages" onClick={closeMenu} className="py-3 px-2 text-charcoal hover:bg-ivory rounded transition-colors font-lora flex items-center gap-2">
+                <MessageCircle className="h-4 w-4" />
+                Inbox
+                {unreadMessages > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-gold text-white text-xs font-bold">
+                    {unreadMessages > 99 ? '99+' : unreadMessages}
+                  </span>
+                )}
+              </Link>
+            )}
             {isAdmin && (
               <>
                 <div className="flex items-center gap-2 py-3 px-2 text-charcoal font-lora">

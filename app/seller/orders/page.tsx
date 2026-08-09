@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { Order } from '@/lib/types'
-import { Truck, Package, CheckCircle } from 'lucide-react'
+import { Truck, Package, CheckCircle, MessageCircle } from 'lucide-react'
 
 const statusConfig: Record<string, { color: string; bg: string; label: string; icon: any }> = {
   pending: { color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Pending', icon: Package },
@@ -307,8 +308,16 @@ export default function SellerOrdersPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
-      <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">My Orders</h1>
-      <p className="text-taupe font-lora mb-8">Manage orders and update shipping for your buyers</p>
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
+        <div>
+          <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">My Orders</h1>
+          <p className="text-taupe font-lora">Manage orders and update shipping for your buyers</p>
+        </div>
+        <Link href="/messages" className="btn btn-secondary px-5 py-2.5 flex items-center gap-2 text-sm">
+          <MessageCircle className="h-4 w-4" />
+          Buyer Messages
+        </Link>
+      </div>
 
       {orders.length === 0 ? (
         <div className="text-center py-16 card">

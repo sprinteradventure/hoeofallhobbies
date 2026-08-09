@@ -25,7 +25,10 @@ export default function LoginPage() {
       })
 
       if (authError) throw authError
-      router.push('/shop/products')
+      // Honor ?redirect=/... from gated actions (e.g. "Message Seller"),
+      // restricted to internal paths so it can't be abused for open redirects.
+      const redirect = new URLSearchParams(window.location.search).get('redirect')
+      router.push(redirect && redirect.startsWith('/') ? redirect : '/shop/products')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
