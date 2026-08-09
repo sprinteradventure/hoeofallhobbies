@@ -8,12 +8,17 @@ export const dynamic = 'force-dynamic'
 // ----------------------------------------------------------------------------
 // POST /api/upload/sign
 // Authorization: Bearer <supabase access token>
-// Body: { kind: 'image' | 'video', contentType: string }
+// Body: { kind: 'image' | 'video', contentType: string, fileName?: string }
 //
 // Vercel serverless request bodies cap at ~4.5 MB, so large media cannot be
 // proxied through an API route. Instead we mint a signed upload URL on the
 // service-role client; the browser then PUTs the bytes straight to Supabase
 // Storage (no key needed client-side). Sellers only.
+//
+// fileName is optional: when omitted a random UUID name is minted (legacy
+// behavior). The client passes it to create deterministic thumbnail names
+// (`<uuid>_thumb.webp` alongside `<uuid>.<ext>` — see lib/imageThumb.ts).
+// It is validated and always stored under the seller's own folder.
 // ============================================================================
 
 const BUCKET = 'product-images'
@@ -96,7 +101,24 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Mint the signed upload URL -------------------------------------------
-    const path = `${user.id}/${crypto.randomUUID()}.${ext}`
+    // Optional client-chosen file name (used for the `_thumb.webp` convention):
+    // strict shape, and its extension must match the declared content type.
+    let fileName: string | null = null
+    if (typeof body?.fileName === 'string' && body.fileName) {
+      const candidate = body.fileName
+      if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,100}\.[a-z0-9]{2,5}$/.test(candidate)) {
+        return NextResponse.json({ error: 'Invalid fileName.' }, { status: 400 })
+      }
+      if (!candidate.toLowerCase().endsWith(`.${ext}`)) {
+        return NextResponse.json(
+          { error: 'fileName extension must match the content type.' },
+          { status: 400 }
+        )
+      }
+      fileName = candidate
+    }
+
+    const path = `${user.id}/${fileName || `${crypto.randomUUID()}.${ext}`}`
     const { data: signed, error: signError } = await admin.storage
       .from(BUCKET)
       .createSignedUploadUrl(path)

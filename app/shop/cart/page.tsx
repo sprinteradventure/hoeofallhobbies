@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Trash2, ShoppingCart, ArrowRight, Package } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { CartItem } from '@/lib/types'
+import ListingImage from '@/components/shop/ListingImage'
 
 export default function CartPage() {
   const router = useRouter()
@@ -82,10 +83,11 @@ export default function CartPage() {
             return (
               <div key={item.id} className="card flex gap-4 items-start">
                 {product.images?.[0] && (
-                  <img
+                  <ListingImage
                     src={product.images[0]}
                     alt={product.title}
-                    className="w-24 h-24 object-cover rounded-xl flex-shrink-0"
+                    className="w-24 h-24 rounded-xl flex-shrink-0"
+                    sizes="96px"
                   />
                 )}
                 <div className="flex-1 min-w-0">

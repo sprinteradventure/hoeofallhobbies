@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Send } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Message } from '@/lib/types'
+import ListingImage from '@/components/shop/ListingImage'
 
 type ThreadInfo = {
   id: string
@@ -154,7 +155,12 @@ export default function ConversationPage() {
         >
           <div className="w-14 h-14 rounded-xl bg-ivory border border-blush overflow-hidden flex-shrink-0">
             {thread.product.image ? (
-              <img src={thread.product.image} alt={thread.product.title} className="w-full h-full object-cover" />
+              <ListingImage
+                src={thread.product.image}
+                alt={thread.product.title}
+                className="w-full h-full"
+                sizes="56px"
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
             )}

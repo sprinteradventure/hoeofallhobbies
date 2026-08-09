@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { MessageCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { ConversationSummary } from '@/lib/types'
+import ListingImage from '@/components/shop/ListingImage'
 
 // Inbox — serves buyers and sellers from the same account system. Each row
 // is one listing thread; the badge shows messages the other party sent that
@@ -102,7 +103,12 @@ export default function MessagesPage() {
             >
               <div className="w-16 h-16 rounded-xl bg-ivory border border-blush overflow-hidden flex-shrink-0">
                 {c.product?.image ? (
-                  <img src={c.product.image} alt={c.product.title} className="w-full h-full object-cover" />
+                  <ListingImage
+                    src={c.product.image}
+                    alt={c.product.title}
+                    className="w-full h-full"
+                    sizes="64px"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
                 )}

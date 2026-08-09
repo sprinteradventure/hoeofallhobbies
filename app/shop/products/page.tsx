@@ -7,6 +7,7 @@ import { Search, Heart, Filter, ChevronDown, ChevronRight, X, Tag } from 'lucide
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
+import ListingImage from '@/components/shop/ListingImage'
 
 import { Suspense } from 'react'
 
@@ -310,10 +311,12 @@ function ProductsPage() {
                     {/* Product Image */}
                     <div className="aspect-square bg-ivory overflow-hidden relative">
                       {product.images && product.images.length > 0 ? (
-                        <img
+                        <ListingImage
                           src={product.images[0]}
                           alt={product.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="absolute inset-0"
+                          imageClassName="group-hover:scale-105 transition-transform duration-500"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

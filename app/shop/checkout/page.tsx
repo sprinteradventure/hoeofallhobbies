@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { CartItem } from '@/lib/types'
+import ListingImage from '@/components/shop/ListingImage'
 import { Truck, CreditCard, MapPin, Package, ChevronRight, Shield, Store, AlertCircle, RefreshCw } from 'lucide-react'
 
 type SellerInfo = {
@@ -637,10 +638,11 @@ export default function CheckoutPage() {
                   {group.items.map(item => (
                     <div key={item.id} className="flex gap-3">
                       {(item.product as any)?.images?.[0] && (
-                        <img
+                        <ListingImage
                           src={(item.product as any).images[0]}
                           alt={(item.product as any).title}
-                          className="w-16 h-16 object-cover rounded-lg"
+                          className="w-16 h-16 rounded-lg flex-shrink-0"
+                          sizes="64px"
                         />
                       )}
                       <div className="flex-1">

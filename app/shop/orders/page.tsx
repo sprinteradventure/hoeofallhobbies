@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { Order } from '@/lib/types'
 import { Package, Truck, Star, ChevronRight } from 'lucide-react'
+import ListingImage from '@/components/shop/ListingImage'
 
 export default function OrdersPage() {
   const router = useRouter()
@@ -77,7 +78,12 @@ export default function OrdersPage() {
                   {/* Product Image */}
                   <div className="w-full md:w-32 h-32 rounded-xl bg-ivory overflow-hidden flex-shrink-0">
                     {product?.images?.[0] ? (
-                      <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
+                      <ListingImage
+                        src={product.images[0]}
+                        alt={product.title}
+                        className="w-full h-full"
+                        sizes="(max-width: 768px) 100vw, 128px"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package className="h-8 w-8 text-taupe" />

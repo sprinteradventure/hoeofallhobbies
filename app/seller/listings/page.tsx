@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Trash2, Edit, Plus, Package, Eye, AlertTriangle, Wallet, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
+import ListingImage from '@/components/shop/ListingImage'
 
 type PayoutStatus = {
   hasAccount: boolean
@@ -206,7 +207,12 @@ export default function SellerListingsPage() {
             <div key={product.id} className="card flex flex-col md:flex-row items-start md:items-center gap-4">
               <div className="w-16 h-16 rounded-xl bg-ivory overflow-hidden flex-shrink-0">
                 {product.images && product.images.length > 0 ? (
-                  <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
+                  <ListingImage
+                    src={product.images[0]}
+                    alt={product.title}
+                    className="w-full h-full"
+                    sizes="64px"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <Package className="h-6 w-6 text-taupe" />

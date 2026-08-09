@@ -1,9 +1,9 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { Star, Heart } from 'lucide-react'
 import { Product } from '@/lib/types'
+import ListingImage from './ListingImage'
 
 interface Props {
   product: Product
@@ -15,10 +15,12 @@ export default function ProductCard({ product }: Props) {
       <div className="card h-full hover:shadow-lg transition-shadow cursor-pointer space-y-3">
         <div className="relative bg-neutral-200 rounded-lg aspect-square overflow-hidden group">
           {product.images?.[0] ? (
-            <img
+            <ListingImage
               src={product.images[0]}
               alt={product.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+              className="absolute inset-0"
+              imageClassName="group-hover:scale-105 transition-transform"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-neutral-400">

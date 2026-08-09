@@ -7,6 +7,7 @@ import { Heart, Share2, ShoppingCart, ArrowLeft, Star, Store, Truck, Flag, X, Ba
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
+import ListingImage from '@/components/shop/ListingImage'
 
 const REPORT_REASONS = [
   'Prohibited or dangerous item',
@@ -241,12 +242,16 @@ export default function ProductDetailClient() {
         <div className="grid lg:grid-cols-2 gap-10">
           {/* Product Images */}
           <div className="flex flex-col gap-4">
-            <div className="aspect-square bg-white rounded-2xl overflow-hidden border border-blush shadow-sm">
+            <div className="relative aspect-square bg-white rounded-2xl overflow-hidden border border-blush shadow-sm">
               {hasImages ? (
-                <img
+                <ListingImage
+                  key={product.images[currentImageIndex]}
                   src={product.images[currentImageIndex]}
                   alt={product.title}
-                  className="w-full h-full object-cover"
+                  variant="full"
+                  priority
+                  className="absolute inset-0"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-taupe">
@@ -261,14 +266,15 @@ export default function ProductDetailClient() {
                   <button
                     key={idx}
                     onClick={() => setCurrentImageIndex(idx)}
-                    className={`aspect-square rounded-xl border-2 overflow-hidden transition-all ${
+                    className={`relative aspect-square rounded-xl border-2 overflow-hidden transition-all ${
                       currentImageIndex === idx ? 'border-gold shadow-md' : 'border-blush'
                     }`}
                   >
-                    <img
+                    <ListingImage
                       src={img}
                       alt={`${product.title} ${idx + 1}`}
-                      className="w-full h-full object-cover"
+                      className="absolute inset-0"
+                      sizes="150px"
                     />
                   </button>
                 ))}
@@ -457,9 +463,15 @@ export default function ProductDetailClient() {
                   href={`/shop/products/${p.id}`}
                   className="group bg-white rounded-xl border border-blush overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                 >
-                  <div className="aspect-square bg-ivory overflow-hidden">
+                  <div className="relative aspect-square bg-ivory overflow-hidden">
                     {p.images && p.images.length > 0 ? (
-                      <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <ListingImage
+                        src={p.images[0]}
+                        alt={p.title}
+                        className="absolute inset-0"
+                        imageClassName="group-hover:scale-105 transition-transform duration-500"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center"><span className="text-4xl">📦</span></div>
                     )}
