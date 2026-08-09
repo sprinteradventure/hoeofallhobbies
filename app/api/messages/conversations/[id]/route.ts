@@ -176,18 +176,38 @@ export async function POST(
       const recipientProfile = senderIsBuyer ? (conversation as any).seller : (conversation as any).buyer
       const product = (conversation as any).product
       const bodyText = parsed.data.body
+      const recipientId = senderIsBuyer ? conversation.seller_id : conversation.buyer_id
 
-      // Fire-and-forget: never block the 201 on email delivery. Failures are
-      // logged inside sendNewMessageEmail; messaging keeps working even when
-      // email is misconfigured.
-      sendNewMessageEmail({
-        to: recipientProfile?.email || '',
-        recipientName: displayName(recipientProfile),
-        senderName: displayName(senderProfile),
-        listingTitle: product?.title || 'your listing',
-        snippet: bodyText.length > 140 ? `${bodyText.slice(0, 140)}…` : bodyText,
-        threadUrl: buildThreadUrl(conversation.id),
-      }).catch((err) => console.error('[email] notification error:', err))
+      // Respect the recipient's opt-out (migration 015). The throttle flag
+      // above is claimed either way, so re-enabling later doesn't change
+      // behavior. Looked up separately from the conversation embed because
+      // PostgREST would reject the whole thread query if it selected a column
+      // that doesn't exist yet — a failed lookup defaults to ENABLED so the
+      // route keeps working (and emailing) before 015 is applied.
+      let optedOut = false
+      const { data: prefRow, error: prefError } = await admin
+        .from('user_profiles')
+        .select('message_email_notifications')
+        .eq('id', recipientId)
+        .single()
+      if (!prefError) {
+        // NULL/missing means enabled; only an explicit false opts out.
+        optedOut = prefRow?.message_email_notifications === false
+      }
+
+      if (!optedOut) {
+        // Fire-and-forget: never block the 201 on email delivery. Failures are
+        // logged inside sendNewMessageEmail; messaging keeps working even when
+        // email is misconfigured.
+        sendNewMessageEmail({
+          to: recipientProfile?.email || '',
+          recipientName: displayName(recipientProfile),
+          senderName: displayName(senderProfile),
+          listingTitle: product?.title || 'your listing',
+          snippet: bodyText.length > 140 ? `${bodyText.slice(0, 140)}…` : bodyText,
+          threadUrl: buildThreadUrl(conversation.id),
+        }).catch((err) => console.error('[email] notification error:', err))
+      }
     }
 
     return NextResponse.json({ message }, { status: 201 })

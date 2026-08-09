@@ -16,6 +16,7 @@ export interface UserProfile {
   stripe_account_id?: string
   stripe_onboarding_complete?: boolean
   stripe_payouts_enabled?: boolean
+  message_email_notifications?: boolean
   ship_name?: string
   ship_street1?: string
   ship_street2?: string

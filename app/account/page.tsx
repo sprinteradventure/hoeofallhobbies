@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { UserProfile } from '@/lib/types'
-import { User, Package, Store, LogOut, ShoppingBag, Edit2, Check, X } from 'lucide-react'
+import { User, Package, Store, LogOut, ShoppingBag, Edit2, Check, X, Mail } from 'lucide-react'
 
 export default function AccountPage() {
   const router = useRouter()
@@ -17,6 +17,11 @@ export default function AccountPage() {
   // ── Seller name editing ──
   const [editingName, setEditingName] = useState(false)
   const [sellerNameInput, setSellerNameInput] = useState('')
+
+  // ── Email notification preference ──
+  const [notifEnabled, setNotifEnabled] = useState(true)
+  const [notifSaving, setNotifSaving] = useState(false)
+  const [notifStatus, setNotifStatus] = useState<'saved' | 'error' | null>(null)
 
   useEffect(() => {
     loadAccount()
@@ -39,6 +44,8 @@ export default function AccountPage() {
 
       setProfile(data)
       setSellerNameInput(data?.seller_name || '')
+      // Missing/NULL means enabled (column may not exist pre-migration-015).
+      setNotifEnabled(data?.message_email_notifications !== false)
     } finally {
       setLoading(false)
     }
@@ -63,6 +70,32 @@ export default function AccountPage() {
       alert('Failed to save seller name. Please try again.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function toggleMessageEmails(next: boolean) {
+    if (!profile || notifSaving) return
+    setNotifEnabled(next) // optimistic
+    setNotifSaving(true)
+    setNotifStatus(null)
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ message_email_notifications: next })
+        .eq('id', profile.id)
+
+      if (error) throw error
+
+      setProfile((prev) =>
+        prev ? { ...prev, message_email_notifications: next } : null
+      )
+      setNotifStatus('saved')
+      setTimeout(() => setNotifStatus((s) => (s === 'saved' ? null : s)), 2500)
+    } catch (err) {
+      setNotifEnabled(!next) // revert optimistic update
+      setNotifStatus('error')
+    } finally {
+      setNotifSaving(false)
     }
   }
 
@@ -161,6 +194,47 @@ export default function AccountPage() {
               </div>
             )}
           </div>
+        )}
+      </div>
+
+      {/* Email notifications */}
+      <div className="card mb-8">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-ivory flex items-center justify-center flex-shrink-0">
+              <Mail className="h-5 w-5 text-gold" />
+            </div>
+            <div>
+              <p className="font-semibold text-charcoal">Message notifications</p>
+              <p className="text-sm text-taupe">
+                Email me when someone messages me about a listing
+              </p>
+            </div>
+          </div>
+          <button
+            role="switch"
+            aria-checked={notifEnabled}
+            aria-label="Message email notifications"
+            onClick={() => toggleMessageEmails(!notifEnabled)}
+            disabled={notifSaving}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus-visible:outline-none disabled:opacity-50 ${
+              notifEnabled ? 'bg-gold' : 'bg-blush'
+            }`}
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                notifEnabled ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+        {notifStatus === 'saved' && (
+          <p className="text-sm text-green-700 mt-3">Preference saved</p>
+        )}
+        {notifStatus === 'error' && (
+          <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-3">
+            Failed to save. Please try again.
+          </p>
         )}
       </div>
 
