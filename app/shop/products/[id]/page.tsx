@@ -71,12 +71,22 @@ export async function generateMetadata({
     description,
     alternates: { canonical: url },
     openGraph: {
-      type: 'website',
+      // No `type` here: Next's OpenGraph union lacks `product`, so og:type is
+      // emitted via `other` below instead of the default website tag.
       url,
       title: `${product.title} | ${SITE_NAME}`,
       description,
       siteName: SITE_NAME,
       images: images.length > 0 ? [{ url: images[0] }] : undefined,
+    },
+    // Pinterest Rich Pins: product OG tags (the Schema.org Product JSON-LD
+    // below is the authoritative source; these reinforce it).
+    other: {
+      'og:type': 'product',
+      'product:price:amount': product.price.toFixed(2),
+      'product:price:currency': 'USD',
+      'product:availability': product.quantity > 0 ? 'in stock' : 'out of stock',
+      'product:condition': product.condition === 'new' ? 'new' : 'used',
     },
     twitter: {
       card: 'summary_large_image',
