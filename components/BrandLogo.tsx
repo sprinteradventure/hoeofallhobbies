@@ -16,13 +16,13 @@ export function HoeWordmark() {
 export function HoeMonogram() {
   return (
     <div className="flex items-center justify-center">
-      <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full bg-charcoal/90 flex items-center justify-center shadow-lg border-2 border-gold/40">
+      <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full bg-white flex items-center justify-center shadow-lg border-2 border-gold/40 overflow-hidden">
         <Image
-          src="/images/H.png"
-          alt="Hoe of All Hobbies Monogram"
-          width={200}
-          height={200}
-          className="w-16 h-16 md:w-20 md:h-20 object-contain"
+          src="/images/hoe-icon-192.png"
+          alt="Hoe of All Hobbies icon"
+          width={192}
+          height={192}
+          className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-full"
           priority
         />
       </div>
@@ -52,11 +52,11 @@ export function BotanicalDivider() {
       <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold to-transparent"></div>
       <div className="w-10 h-10 flex items-center justify-center">
         <Image
-          src="/images/H.png"
-          alt="Decorative bow"
+          src="/images/hoe-icon-64.png"
+          alt="Hoe of All Hobbies icon"
           width={40}
           height={40}
-          className="w-8 h-8 object-contain"
+          className="w-8 h-8 rounded-full object-cover border border-blush"
         />
       </div>
       <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gold to-transparent"></div>
@@ -99,13 +99,13 @@ export function BotanicalElement() {
 export function BrandHeroImage() {
   return (
     <div className="relative w-full max-w-2xl mx-auto">
-      <div className="relative w-48 h-48 md:w-64 md:h-64 mx-auto rounded-full bg-charcoal/90 flex items-center justify-center shadow-xl border-2 border-gold/40">
+      <div className="relative w-48 h-48 md:w-64 md:h-64 mx-auto rounded-full bg-white flex items-center justify-center shadow-xl border-2 border-gold/40 overflow-hidden">
         <Image
-          src="/images/H.png"
-          alt="Hoe of All Hobbies Monogram"
-          width={300}
-          height={300}
-          className="w-32 h-32 md:w-40 md:h-40 object-contain"
+          src="/images/hoe-icon-512.png"
+          alt="Hoe of All Hobbies icon"
+          width={512}
+          height={512}
+          className="w-40 h-40 md:w-52 md:h-52 object-cover rounded-full"
           priority
         />
       </div>
@@ -132,11 +132,11 @@ export function RibbonDivider() {
 export function SmallMonogram() {
   return (
     <img
-      src="/images/hh-monogram.svg"
-      alt="Hoe of All Hobbies monogram"
+      src="/images/hoe-icon-64.png"
+      alt="Hoe of All Hobbies icon"
       width={36}
       height={36}
-      className="h-9 w-9 object-contain"
+      className="h-9 w-9 rounded-full object-cover border border-blush bg-white"
     />
   );
 }

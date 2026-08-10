@@ -47,6 +47,8 @@ function buildHtml({
   <body style="margin:0;padding:0;background-color:#faf8f5;font-family:Georgia,'Times New Roman',serif;">
     <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
       <div style="background-color:#ffffff;border:1px solid #ead6ce;border-radius:16px;padding:32px;">
+        <img src="${SITE_URL}/images/hoe-icon-192.png" alt="${escapeHtml(SITE_NAME)}" width="56" height="56"
+             style="display:block;border-radius:50%;margin:0 0 12px;" />
         <p style="margin:0 0 4px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#c9a876;font-weight:bold;">
           ${escapeHtml(SITE_NAME)}
         </p>
