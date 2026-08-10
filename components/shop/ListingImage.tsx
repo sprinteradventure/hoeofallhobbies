@@ -14,8 +14,12 @@ import { imageThumb, canOptimize } from '@/lib/imageThumb'
 //    it swaps to the original once.
 //  * Hosts outside next.config's image allowlist (arbitrary pasted URLs)
 //    render as a plain <img> so they keep working unoptimized.
-//  * Renders `fill` inside a relative, overflow-hidden wrapper — pass the
-//    box classes (size/rounding) via className.
+//  * Renders `fill` inside a relative, overflow-hidden wrapper — pass SIZE
+//    classes (w-full h-full, w-24 h-24, etc.) via className. NEVER pass
+//    position utilities (absolute/relative/fixed): they conflict with the
+//    wrapper's own `relative`, Tailwind's stylesheet order decides the
+//    winner, and a losing `absolute inset-0` collapses the wrapper to 0
+//    height — which stops lazy images from ever loading.
 // ============================================================================
 
 export default function ListingImage({

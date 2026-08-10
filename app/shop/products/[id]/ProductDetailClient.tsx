@@ -250,7 +250,7 @@ export default function ProductDetailClient() {
                   alt={product.title}
                   variant="full"
                   priority
-                  className="absolute inset-0"
+                  className="w-full h-full"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                 />
               ) : (
@@ -273,7 +273,7 @@ export default function ProductDetailClient() {
                     <ListingImage
                       src={img}
                       alt={`${product.title} ${idx + 1}`}
-                      className="absolute inset-0"
+                      className="w-full h-full"
                       sizes="150px"
                     />
                   </button>
@@ -468,7 +468,7 @@ export default function ProductDetailClient() {
                       <ListingImage
                         src={p.images[0]}
                         alt={p.title}
-                        className="absolute inset-0"
+                        className="w-full h-full"
                         imageClassName="group-hover:scale-105 transition-transform duration-500"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />

@@ -18,7 +18,7 @@ export default function ProductCard({ product }: Props) {
             <ListingImage
               src={product.images[0]}
               alt={product.title}
-              className="absolute inset-0"
+              className="w-full h-full"
               imageClassName="group-hover:scale-105 transition-transform"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             />
