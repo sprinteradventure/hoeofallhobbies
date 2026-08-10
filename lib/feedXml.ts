@@ -15,7 +15,7 @@ export interface FeedProduct {
   quantity: number
   images: string[] | null
   category: string
-  created_at?: string
+  listing_date?: string
 }
 
 export function escapeXml(value: string): string {

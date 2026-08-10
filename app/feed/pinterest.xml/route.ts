@@ -19,9 +19,9 @@ export async function GET() {
     const admin = getSupabaseAdmin()
     const { data, error } = await admin
       .from('products')
-      .select('id, title, description, price, condition, quantity, images, category, created_at')
+      .select('id, title, description, price, condition, quantity, images, category, listing_date')
       .gt('quantity', 0)
-      .order('created_at', { ascending: false })
+      .order('listing_date', { ascending: false })
       .limit(FEED_LIMIT)
 
     if (error) throw error
