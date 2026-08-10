@@ -44,6 +44,10 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [DEFAULT_OG_IMAGE],
   },
+  verification: {
+    // Pinterest domain verification (renders <meta name="p:domain_verify">)
+    other: { 'p:domain_verify': '2bd6b860031482ec30bc9ddb6003bc20' },
+  },
 }
 
 export default function RootLayout({
