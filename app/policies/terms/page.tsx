@@ -75,8 +75,8 @@ export default function TermsPage() {
           <p>
             Sellers retain ownership of their listings and grant us a license to display and
             promote them on the platform. Report infringement concerns to{' '}
-            <a href="mailto:support@hoeofallhobbies.com" className="text-gold hover:underline">
-              support@hoeofallhobbies.com
+            <a href="mailto:hoardstashco@gmail.com" className="text-gold hover:underline">
+              hoardstashco@gmail.com
             </a>
             .
           </p>

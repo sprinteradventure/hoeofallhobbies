@@ -78,8 +78,8 @@ export default function PrivacyPage() {
           <p>
             You may access, correct, or delete your account information at any time from your
             account settings, or by emailing{' '}
-            <a href="mailto:support@hoeofallhobbies.com" className="text-gold hover:underline">
-              support@hoeofallhobbies.com
+            <a href="mailto:hoardstashco@gmail.com" className="text-gold hover:underline">
+              hoardstashco@gmail.com
             </a>
             . We retain order records as required for tax and legal purposes.
           </p>
@@ -100,8 +100,8 @@ export default function PrivacyPage() {
           <h2 className="font-cormorant text-2xl font-bold text-charcoal mb-3">Contact</h2>
           <p>
             Privacy questions? Email{' '}
-            <a href="mailto:support@hoeofallhobbies.com" className="text-gold hover:underline">
-              support@hoeofallhobbies.com
+            <a href="mailto:hoardstashco@gmail.com" className="text-gold hover:underline">
+              hoardstashco@gmail.com
             </a>
             .
           </p>

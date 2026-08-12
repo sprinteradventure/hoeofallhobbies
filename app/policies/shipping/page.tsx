@@ -62,8 +62,8 @@ export default function ShippingPolicyPage() {
           <p className="text-sm">
             Message the seller directly from your order page for shipping questions. If you
             can&apos;t reach them, email{' '}
-            <a href="mailto:support@hoeofallhobbies.com" className="text-gold hover:underline">
-              support@hoeofallhobbies.com
+            <a href="mailto:hoardstashco@gmail.com" className="text-gold hover:underline">
+              hoardstashco@gmail.com
             </a>{' '}
             and we&apos;ll help.
           </p>

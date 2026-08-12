@@ -93,8 +93,8 @@ export default function ReturnsPolicyPage() {
           <p className="text-sm">
             If a seller doesn&apos;t respond within 3 business days, or you can&apos;t reach an
             agreement, email us at{' '}
-            <a href="mailto:support@hoeofallhobbies.com" className="text-gold hover:underline">
-              support@hoeofallhobbies.com
+            <a href="mailto:hoardstashco@gmail.com" className="text-gold hover:underline">
+              hoardstashco@gmail.com
             </a>{' '}
             and we&apos;ll step in to mediate.
           </p>

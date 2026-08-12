@@ -67,10 +67,10 @@ export default function Footer() {
               Sustainable finds for creative minds. A curated marketplace for craft and hobby supplies.
             </p>
             <a
-              href="mailto:support@hoeofallhobbies.com"
+              href="mailto:hoardstashco@gmail.com"
               className="block mt-3 text-sm text-gold hover:underline font-lora"
             >
-              support@hoeofallhobbies.com
+              hoardstashco@gmail.com
             </a>
           </div>
           <FooterColumn title="Shop" links={SHOP_LINKS} />

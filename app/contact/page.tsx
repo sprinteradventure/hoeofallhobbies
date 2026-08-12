@@ -29,10 +29,10 @@ export default function ContactPage() {
                 onboarding, or press:
               </p>
               <a
-                href="mailto:support@hoeofallhobbies.com"
+                href="mailto:hoardstashco@gmail.com"
                 className="text-gold hover:underline font-semibold"
               >
-                support@hoeofallhobbies.com
+                hoardstashco@gmail.com
               </a>
               <p className="text-sm text-taupe mt-2">
                 We reply within 1–2 business days.
