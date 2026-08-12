@@ -20,6 +20,14 @@ const ACCOUNT_LINKS = [
   { href: '/shop/orders', label: 'My Orders' },
 ]
 
+const SUPPORT_LINKS = [
+  { href: '/policies/returns', label: 'Returns & Refunds' },
+  { href: '/policies/shipping', label: 'Shipping Policy' },
+  { href: '/policies/terms', label: 'Terms of Service' },
+  { href: '/policies/privacy', label: 'Privacy Policy' },
+  { href: '/contact', label: 'Contact Us' },
+]
+
 function FooterColumn({
   title,
   links,
@@ -49,7 +57,7 @@ export default function Footer() {
   return (
     <footer className="border-t border-blush bg-ivory text-charcoal mt-0">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
+        <div className="grid md:grid-cols-5 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <SmallMonogram />
@@ -58,10 +66,17 @@ export default function Footer() {
             <p className="text-sm text-taupe font-lora leading-relaxed">
               Sustainable finds for creative minds. A curated marketplace for craft and hobby supplies.
             </p>
+            <a
+              href="mailto:support@hoeofallhobbies.com"
+              className="block mt-3 text-sm text-gold hover:underline font-lora"
+            >
+              support@hoeofallhobbies.com
+            </a>
           </div>
           <FooterColumn title="Shop" links={SHOP_LINKS} />
           <FooterColumn title="Sell" links={SELL_LINKS} />
           <FooterColumn title="Account" links={ACCOUNT_LINKS} />
+          <FooterColumn title="Support" links={SUPPORT_LINKS} />
         </div>
         <div className="border-t border-blush pt-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
