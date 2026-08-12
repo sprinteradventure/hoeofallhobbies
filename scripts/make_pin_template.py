@@ -116,19 +116,16 @@ def draw_heart(draw: ImageDraw.ImageDraw, cx: float, cy: float, size: float,
         draw.polygon(pts, fill=color)
 
 
-def draw_bow(draw: ImageDraw.ImageDraw, cx: float, cy: float, size: float,
-             color, width: int = 2) -> None:
-    """Stylized line-art bow centered at (cx, cy)."""
-    s = size
-    # loops
-    draw.arc([cx - s, cy - s * 0.55, cx - s * 0.08, cy + s * 0.45], 95, 305, fill=color, width=width)
-    draw.arc([cx + s * 0.08, cy - s * 0.55, cx + s, cy + s * 0.45], -125, 85, fill=color, width=width)
-    # knot
-    r = s * 0.12
-    draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=color, width=width)
-    # tails
-    draw.line([(cx - s * 0.15, cy + s * 0.3), (cx - s * 0.45, cy + s * 0.95)], fill=color, width=width)
-    draw.line([(cx + s * 0.15, cy + s * 0.3), (cx + s * 0.45, cy + s * 0.95)], fill=color, width=width)
+def paste_hoe_badge(img: Image.Image, cx: float, cy: float, d: int) -> None:
+    """Watercolor hoe icon in a small white circle with a thin blush outline,
+    centered at (cx, cy). Matches the footer icon treatment; the white circle
+    lets the icon's white background blend in."""
+    draw = ImageDraw.Draw(img)
+    r = d / 2
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill="#ffffff", outline=BLUSH, width=2)
+    icon_size = int(d * 0.76)
+    icon = Image.open(HOE_ICON).convert("RGB").resize((icon_size, icon_size), Image.LANCZOS)
+    img.paste(icon, (int(cx - icon_size / 2), int(cy - icon_size / 2)))
 
 
 def draw_sprig(base: Image.Image, x0: float, y0: float, height: float,
@@ -188,7 +185,7 @@ def build() -> None:
                   ((rx0 + rx1) / 2, ry1 - notch), (rx0, ry1)], fill=BLUSH)
     rcx = (rx0 + rx1) / 2
     ribbon_font = font("PlayfairDisplay-Regular.ttf", 13)
-    draw_bow(draw, rcx, 70, 26, CREAM, 2)
+    paste_hoe_badge(img, rcx, 70, 60)
     for i, line in enumerate(["SUSTAINABLE", "FINDS FOR", "CREATIVE", "MINDS"]):
         draw_tracked(draw, rcx, 112 + i * 27, line, ribbon_font, CREAM, 1)
     draw_heart(draw, rcx, 300, 11, CREAM, outline=True, width=2)
@@ -212,7 +209,7 @@ def build() -> None:
         draw.text((x, baseline_y), ch, font=pf_masthead, fill=CHARCOAL)
         x += (pf_masthead.getbbox(ch)[2] - pf_masthead.getbbox(ch)[0]) + 6
 
-    draw_bow(draw, mast_cx, 186, 22, "#b89a8a", 2)
+    paste_hoe_badge(img, mast_cx, 186, 72)
     draw_tracked(draw, mast_cx, 226, "SUSTAINABLE FINDS FOR CREATIVE MINDS", pf, CHARCOAL, 5)
 
     # --- Photo mat -----------------------------------------------------------
@@ -246,7 +243,7 @@ def build() -> None:
     draw.polygon([(lx0 + c + 4, ly0 + 4), (lx1 - c - 4, ly0 + 4), (lx1 - 4, ly0 + c + 4),
                   (lx1 - 4, ly1 - c - 4), (lx1 - c - 4, ly1 - 4), (lx0 + c + 4, ly1 - 4),
                   (lx0 + 4, ly1 - c - 4), (lx0 + 4, ly0 + c + 4)], outline=CREAM)
-    draw_bow(draw, (lx0 + lx1) / 2, 1392, 13, CREAM, 1)
+    paste_hoe_badge(img, (lx0 + lx1) / 2, 1394, 42)
 
     # Centered brand line
     draw_tracked(draw, 560, 1414, "HOE OF ALL HOBBIES", pf_footer, FOOTER_TEXT, 6)
