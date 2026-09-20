@@ -52,7 +52,7 @@ function ProductsPage() {
 
   useEffect(() => {
     fetchProducts()
-  }, [selectedCategory, selectedSubcategory])
+  }, [selectedCategory, selectedSubcategory, siteType])
 
   async function fetchProducts() {
     try {
@@ -61,6 +61,10 @@ function ProductsPage() {
         .from('products')
         .select('*, seller:user_profiles(*)')
         .eq('is_active', true)
+        // Segregate the catalog per marketplace: holidays visitors only see
+        // holiday/party listings and vice versa. Rows predating migration 016
+        // have no site value — fall back to their category via .or().
+        .or(`site.eq.${siteType},site.is.null`)
 
       // Match BOTH the legacy single-value columns (old rows) and the new
       // multi-select arrays (rows where the category is any of several).

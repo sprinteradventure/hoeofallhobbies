@@ -7,6 +7,7 @@ import { Heart, Share2, ShoppingCart, ArrowLeft, Star, Store, Truck, Flag, X, Ba
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
+import { useSiteType } from '@/lib/site-context'
 import ListingImage from '@/components/shop/ListingImage'
 
 const REPORT_REASONS = [
@@ -22,6 +23,7 @@ export default function ProductDetailClient() {
   const router = useRouter()
   const params = useParams()
   const productId = params.id as string
+  const siteType = useSiteType()
 
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
@@ -74,13 +76,15 @@ export default function ProductDetailClient() {
         )
       }
 
-      // Fetch related products (match legacy category OR the categories array)
+      // Fetch related products (match legacy category OR the categories array).
+      // Segregated per marketplace (migration 016): only same-site listings.
       if (data) {
         const quoted = `"${String(data.category).replace(/"/g, '\\"')}"`
         const { data: related } = await supabase
           .from('products')
           .select('*, seller:user_profiles(*)')
           .or(`category.eq.${quoted},categories.cs.{${quoted}}`)
+          .or(`site.eq.${siteType},site.is.null`)
           .eq('is_active', true)
           .neq('id', productId)
           .limit(4)

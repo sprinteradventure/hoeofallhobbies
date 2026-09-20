@@ -1,12 +1,15 @@
 import type { MetadataRoute } from 'next'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-import { getSiteUrl } from '@/lib/site-context-server'
+import { getSiteUrl, getSiteType } from '@/lib/site-context-server'
 
 export const dynamic = 'force-dynamic'
 
 // /sitemap.xml — static public routes + every active product listing.
+// Listings are segregated per marketplace (migration 016): each domain's
+// sitemap contains only its own products.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = await getSiteUrl()
+  const siteType = await getSiteType()
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${siteUrl}/`, changeFrequency: 'daily', priority: 1.0 },
@@ -22,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .from('products')
       .select('id, updated_at, listing_date')
       .eq('is_active', true)
+      .or(`site.eq.${siteType},site.is.null`)
       .order('listing_date', { ascending: false })
 
     if (error) throw error

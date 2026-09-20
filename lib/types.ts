@@ -43,6 +43,7 @@ export interface Product {
   categories?: string[]
   subcategories?: string[]
   video_url?: string
+  site?: 'hobbies' | 'holidays'
   price: number
   condition: 'new' | 'like-new' | 'used' | 'damaged'
   quantity: number

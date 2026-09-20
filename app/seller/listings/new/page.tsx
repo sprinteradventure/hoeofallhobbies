@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
-import { CATEGORIES, getSubcategoriesForCategory, isCollectiblesCategory, COLLECTIBLES_CATEGORY_NAME } from '@/lib/categories'
+import { useSiteCategories, useSiteType, getSiteName } from '@/lib/site-context'
+import { getSubcategoriesForCategory, isCollectiblesCategory, COLLECTIBLES_CATEGORY_NAME } from '@/lib/categories'
 import ImageUploader from '@/components/ImageUploader'
 import VideoUploader from '@/components/VideoUploader'
 import { Wallet, AlertTriangle, ExternalLink, Plus, Sparkles } from 'lucide-react'
@@ -19,6 +20,9 @@ type PayoutStatus = {
 
 export default function NewListingPage() {
   const router = useRouter()
+  const siteType = useSiteType()
+  const siteCategories = useSiteCategories()
+  const siteName = getSiteName(siteType)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([])
@@ -142,7 +146,7 @@ export default function NewListingPage() {
   function toggleCategory(name: string) {
     setSelectedCategories((prev) => {
       if (prev.includes(name)) {
-        const removedSubs = new Set(getSubcategoriesForCategory(name))
+        const removedSubs = new Set(getSubcategoriesForCategory(name, siteCategories))
         // Also remove any custom subcategories if leaving Collectibles
         if (isCollectiblesCategory(name)) {
           customSubcategories.forEach((sub) => removedSubs.add(sub))
@@ -190,6 +194,9 @@ export default function NewListingPage() {
           subcategory: selectedSubcategories[0] || null,
           categories: selectedCategories,
           subcategories: selectedSubcategories,
+          // Tag the listing for the marketplace it was created on so it only
+          // appears on that site (migration 016).
+          site: siteType,
           price: parseFloat(formData.price),
           condition: formData.condition,
           quantity: parseInt(formData.quantity),
@@ -226,7 +233,11 @@ export default function NewListingPage() {
     <div className="mx-auto max-w-3xl px-4 py-12">
       <div className="mb-8">
         <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">Create New Listing</h1>
-        <p className="text-taupe font-lora">List your craft and hobby supplies. You keep 95% of every sale.</p>
+        <p className="text-taupe font-lora">
+          {siteType === 'holidays'
+            ? `List your holiday decor and party supplies on ${siteName}. You keep 95% of every sale.`
+            : `List your craft and hobby supplies. You keep 95% of every sale.`}
+        </p>
       </div>
 
       {/* Payout warning */}
@@ -318,7 +329,7 @@ export default function NewListingPage() {
           <div>
             <label className="label block mb-2">Categories * <span className="text-taupe font-normal">(pick one or more)</span></label>
             <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map(cat => {
+              {siteCategories.map(cat => {
                 const selected = selectedCategories.includes(cat.name)
                 return (
                   <button
@@ -345,7 +356,7 @@ export default function NewListingPage() {
             <div className="space-y-3">
               <label className="label block">Subcategories <span className="text-taupe font-normal">(optional, pick any that fit)</span></label>
               {selectedCategories.map(catName => {
-                const baseSubs = getSubcategoriesForCategory(catName)
+                const baseSubs = getSubcategoriesForCategory(catName, siteCategories)
                 const extraSubs = isCollectiblesCategory(catName) ? customSubcategories : []
                 const allSubs = [...new Set([...baseSubs, ...extraSubs])]
 

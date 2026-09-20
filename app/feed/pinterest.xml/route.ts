@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { buildFeedXml, FeedProduct } from '@/lib/feedXml'
+import { getSiteType } from '@/lib/site-context-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,17 +11,21 @@ export const dynamic = 'force-dynamic'
 // products with at least one image; g:image_link points at the branded pin
 // composite (/api/pin-image/[id]). Pinterest fetches daily; cached 1h at the
 // edge. Paste this URL into Pinterest Business > Catalogs > Data sources.
+// Catalog is segregated per marketplace (migration 016): each domain's feed
+// only contains its own listings.
 // ============================================================================
 
 const FEED_LIMIT = 2000
 
 export async function GET() {
   try {
+    const siteType = await getSiteType()
     const admin = getSupabaseAdmin()
     const { data, error } = await admin
       .from('products')
       .select('id, title, description, price, condition, quantity, images, category, listing_date')
       .gt('quantity', 0)
+      .or(`site.eq.${siteType},site.is.null`)
       .order('listing_date', { ascending: false })
       .limit(FEED_LIMIT)
 
