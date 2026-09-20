@@ -3,7 +3,7 @@ import { Cormorant, Lora, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import { getSiteName, getSiteUrl, getSiteDescription } from '@/lib/site-context-server'
+import { getSiteName, getSiteUrl, getSiteDescription, getSiteType } from '@/lib/site-context-server'
 
 const cormorant = Cormorant({
   subsets: ['latin'],
@@ -65,8 +65,12 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const siteType = await getSiteType()
   return (
-    <html lang="en" className={`${cormorant.variable} ${lora.variable} ${playfair.variable}`}>
+    <html
+      lang="en"
+      className={`${cormorant.variable} ${lora.variable} ${playfair.variable}${siteType === 'holidays' ? ' site-holidays' : ''}`}
+    >
       <body className="font-lora antialiased bg-cream text-charcoal">
         <Navbar />
         <main className="min-h-screen">

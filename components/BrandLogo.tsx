@@ -1,4 +1,7 @@
+'use client'
+
 import Image from 'next/image'
+import { useSiteType } from '@/lib/site-context'
 
 export function HoeWordmark() {
   return (
@@ -130,10 +133,12 @@ export function RibbonDivider() {
 }
 
 export function SmallMonogram() {
+  const siteType = useSiteType()
+  const isHolidays = siteType === 'holidays'
   return (
     <img
-      src="/images/hoe-icon-64.png"
-      alt="Hoe of All Hobbies icon"
+      src={isHolidays ? '/images/holidays-icon.png' : '/images/hoe-icon-64.png'}
+      alt={isHolidays ? 'Hoe of All Holidays icon' : 'Hoe of All Hobbies icon'}
       width={36}
       height={36}
       className="h-9 w-9 rounded-full object-cover border border-blush bg-white"

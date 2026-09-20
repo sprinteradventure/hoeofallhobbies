@@ -15,7 +15,7 @@ export default async function Home() {
     '@type': 'Organization',
     name: siteName,
     url: siteUrl,
-    logo: `${siteUrl}/images/logo-of-all.png`,
+    logo: `${siteUrl}/images/${isHolidays ? 'holidays-logo.png' : 'logo-of-all.png'}`,
   }
 
   const websiteJsonLd = {
@@ -40,9 +40,9 @@ export default async function Home() {
       <section className="relative overflow-hidden bg-gradient-to-br from-ivory via-cream to-blush px-4 py-12 sm:py-16">
         <div className="mx-auto max-w-5xl text-center">
           <div className="mb-6 flex justify-center">
-            <div className="mx-auto max-w-sm md:max-w-md">
+            <div className={`mx-auto ${isHolidays ? 'max-w-md md:max-w-lg' : 'max-w-sm md:max-w-md'}`}>
               <img
-                src="/images/logo-of-all.png"
+                src={isHolidays ? '/images/holidays-logo.png' : '/images/logo-of-all.png'}
                 alt={`${siteName} — ${siteDescription}`}
                 className="w-full h-auto object-contain"
               />
