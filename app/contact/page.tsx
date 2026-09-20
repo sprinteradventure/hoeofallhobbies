@@ -1,14 +1,20 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Mail, MessageCircle, Package } from 'lucide-react'
+import { getSiteName } from '@/lib/site-context-server'
 
-export const metadata: Metadata = {
-  title: 'Contact Us | Hoe of All Hobbies',
-  description:
-    'Get in touch with the Hoe of All Hobbies support team — order help, seller questions, and general inquiries.',
+export async function generateMetadata(): Promise<Metadata> {
+  const siteName = await getSiteName()
+  return {
+    title: `Contact Us | ${siteName}`,
+    description:
+      `Get in touch with the ${siteName} support team — order help, seller questions, and general inquiries.`,
+  }
 }
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const siteName = await getSiteName()
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">Contact Us</h1>

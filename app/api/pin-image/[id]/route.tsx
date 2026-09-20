@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-import { SITE_NAME } from '@/lib/site'
+import { getSiteIdentity } from '@/lib/site-context-server'
 
 // Edge runtime: canonical for ImageResponse and avoids a @vercel/og Windows
 // path bug (its embedded fallback font fails fileURLToPath when the project
@@ -68,6 +68,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const origin = new URL(request.url).origin
+  const host = new URL(request.url).host
+  const { SITE_NAME } = getSiteIdentity(host)
   const product = await fetchProduct(params.id)
   const imageUrl = product?.images?.filter(Boolean)[0] || null
 

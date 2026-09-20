@@ -1,12 +1,18 @@
 import type { Metadata } from 'next'
+import { getSiteName } from '@/lib/site-context-server'
 
-export const metadata: Metadata = {
-  title: 'Shipping Policy | Hoe of All Hobbies',
-  description:
-    'Shipping times, carriers, and tracking for orders on Hoe of All Hobbies, where independent sellers ship directly to you.',
+export async function generateMetadata(): Promise<Metadata> {
+  const siteName = await getSiteName()
+  return {
+    title: `Shipping Policy | ${siteName}`,
+    description:
+      `Shipping times, carriers, and tracking for orders on ${siteName}, where independent sellers ship directly to you.`,
+  }
 }
 
-export default function ShippingPolicyPage() {
+export default async function ShippingPolicyPage() {
+  const siteName = await getSiteName()
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">Shipping Policy</h1>
@@ -18,7 +24,7 @@ export default function ShippingPolicyPage() {
             Sellers ship directly
           </h2>
           <p className="text-sm">
-            Hoe of All Hobbies is a marketplace: every order is packed and shipped by the
+            {siteName} is a marketplace: every order is packed and shipped by the
             independent seller you bought from, not from a central warehouse. Shipping options and
             costs are shown at checkout before you pay.
           </p>

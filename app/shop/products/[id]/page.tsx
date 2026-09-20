@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-import { SITE_NAME, SITE_URL } from '@/lib/site'
+import { getSiteName, getSiteUrl } from '@/lib/site-context-server'
 import ProductDetailClient from './ProductDetailClient'
 
 export const dynamic = 'force-dynamic'
@@ -51,6 +51,8 @@ export async function generateMetadata({
   params: { id: string }
 }): Promise<Metadata> {
   const product = await fetchProduct(params.id)
+  const siteName = await getSiteName()
+  const siteUrl = await getSiteUrl()
 
   if (!product) {
     return {
@@ -61,26 +63,22 @@ export async function generateMetadata({
 
   const description = trimDescription(
     product.description,
-    `${product.title} — craft & hobby supplies on ${SITE_NAME}.`
+    `${product.title} — find it on ${siteName}.`
   )
-  const url = `${SITE_URL}/shop/products/${product.id}`
+  const url = `${siteUrl}/shop/products/${product.id}`
   const images = (product.images || []).filter(Boolean)
 
   return {
-    title: `${product.title} | ${SITE_NAME}`,
+    title: `${product.title} | ${siteName}`,
     description,
     alternates: { canonical: url },
     openGraph: {
-      // No `type` here: Next's OpenGraph union lacks `product`, so og:type is
-      // emitted via `other` below instead of the default website tag.
       url,
-      title: `${product.title} | ${SITE_NAME}`,
+      title: `${product.title} | ${siteName}`,
       description,
-      siteName: SITE_NAME,
+      siteName: siteName,
       images: images.length > 0 ? [{ url: images[0] }] : undefined,
     },
-    // Pinterest Rich Pins: product OG tags (the Schema.org Product JSON-LD
-    // below is the authoritative source; these reinforce it).
     other: {
       'og:type': 'product',
       'product:price:amount': product.price.toFixed(2),
@@ -90,7 +88,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${product.title} | ${SITE_NAME}`,
+      title: `${product.title} | ${siteName}`,
       description,
       images: images.length > 0 ? [images[0]] : undefined,
     },
@@ -118,6 +116,8 @@ export default async function ProductDetailPage({
   params: { id: string }
 }) {
   const product = await fetchProduct(params.id)
+  const siteName = await getSiteName()
+  const siteUrl = await getSiteUrl()
 
   const jsonLd = product
     ? {
@@ -134,7 +134,7 @@ export default async function ProductDetailPage({
           : undefined,
         offers: {
           '@type': 'Offer',
-          url: `${SITE_URL}/shop/products/${product.id}`,
+          url: `${siteUrl}/shop/products/${product.id}`,
           price: product.price.toFixed(2),
           priceCurrency: 'USD',
           availability:

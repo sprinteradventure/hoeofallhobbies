@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { Wallet, CheckCircle, Clock, AlertCircle, ExternalLink } from 'lucide-react'
 import { SELLER_KEEP_PERCENT } from '@/lib/categories'
+import { useSiteType, getSiteName } from '@/lib/site-context'
 
 type PayoutStatus = {
   hasAccount: boolean
@@ -15,6 +16,9 @@ type PayoutStatus = {
 
 export default function SellerPayoutsPage() {
   const router = useRouter()
+  const siteType = useSiteType()
+  const siteName = getSiteName(siteType)
+
   const [status, setStatus] = useState<PayoutStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
@@ -149,7 +153,7 @@ export default function SellerPayoutsPage() {
           <AlertCircle className="h-5 w-5 text-gold flex-shrink-0 mt-0.5" />
           <div className="text-sm text-taupe space-y-2">
             <p>
-              <span className="font-semibold text-charcoal">How it works:</span> Hoe of All Hobbies
+              <span className="font-semibold text-charcoal">How it works:</span> {siteName}
               uses Stripe Connect. When a buyer purchases your item, {SELLER_KEEP_PERCENT}% of the
               item price goes straight to your Stripe account and {100 - SELLER_KEEP_PERCENT}% stays with
               the platform. Shipping the buyer pays is retained by the platform to purchase your

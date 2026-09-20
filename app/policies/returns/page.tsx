@@ -1,13 +1,19 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { getSiteName } from '@/lib/site-context-server'
 
-export const metadata: Metadata = {
-  title: 'Returns & Refunds Policy | Hoe of All Hobbies',
-  description:
-    'How returns and refunds work on Hoe of All Hobbies, a marketplace where independent sellers ship directly to you.',
+export async function generateMetadata(): Promise<Metadata> {
+  const siteName = await getSiteName()
+  return {
+    title: `Returns & Refunds Policy | ${siteName}`,
+    description:
+      `How returns and refunds work on ${siteName}, a marketplace where independent sellers ship directly to you.`,
+  }
 }
 
-export default function ReturnsPolicyPage() {
+export default async function ReturnsPolicyPage() {
+  const siteName = await getSiteName()
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">
@@ -21,7 +27,7 @@ export default function ReturnsPolicyPage() {
             A marketplace, not a warehouse
           </h2>
           <p className="text-sm">
-            Hoe of All Hobbies is a curated marketplace. Each order is sold and shipped directly
+            {siteName} is a curated marketplace. Each order is sold and shipped directly
             by an independent seller, not by us. That means returns are handled between you and
             the seller, with our support team available if you get stuck.
           </p>

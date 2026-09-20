@@ -1,12 +1,18 @@
 import type { Metadata } from 'next'
+import { getSiteName } from '@/lib/site-context-server'
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy | Hoe of All Hobbies',
-  description:
-    'How Hoe of All Hobbies collects, uses, and protects your personal information.',
+export async function generateMetadata(): Promise<Metadata> {
+  const siteName = await getSiteName()
+  return {
+    title: `Privacy Policy | ${siteName}`,
+    description:
+      `How ${siteName} collects, uses, and protects your personal information.`,
+  }
 }
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const siteName = await getSiteName()
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">Privacy Policy</h1>

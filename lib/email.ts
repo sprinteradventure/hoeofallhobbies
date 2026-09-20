@@ -41,16 +41,18 @@ function buildHtml({
   listingTitle,
   snippet,
   threadUrl,
-}: Omit<NewMessageEmailParams, 'to'>): string {
+  siteName = SITE_NAME,
+  siteUrl = SITE_URL,
+}: Omit<NewMessageEmailParams, 'to'> & { siteName?: string; siteUrl?: string }): string {
   return `<!DOCTYPE html>
 <html>
   <body style="margin:0;padding:0;background-color:#faf8f5;font-family:Georgia,'Times New Roman',serif;">
     <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
       <div style="background-color:#ffffff;border:1px solid #ead6ce;border-radius:16px;padding:32px;">
-        <img src="${SITE_URL}/images/hoe-icon-192.png" alt="${escapeHtml(SITE_NAME)}" width="56" height="56"
+        <img src="${siteUrl}/images/hoe-icon-192.png" alt="${escapeHtml(siteName)}" width="56" height="56"
              style="display:block;border-radius:50%;margin:0 0 12px;" />
         <p style="margin:0 0 4px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#c9a876;font-weight:bold;">
-          ${escapeHtml(SITE_NAME)}
+          ${escapeHtml(siteName)}
         </p>
         <h1 style="margin:0 0 16px;font-size:24px;color:#3d4451;font-weight:bold;">
           New message from ${escapeHtml(senderName)}
@@ -70,7 +72,7 @@ function buildHtml({
         </a>
       </div>
       <p style="margin:16px 0 0;font-size:12px;color:#9b8a7e;text-align:center;">
-        You received this email because someone messaged you on ${escapeHtml(SITE_NAME)}.
+        You received this email because someone messaged you on ${escapeHtml(siteName)}.
       </p>
     </div>
   </body>
@@ -81,7 +83,10 @@ function buildHtml({
  * Send a "new message" notification. Returns true when the email was accepted
  * by Resend. Never throws — callers should treat email as fire-and-forget.
  */
-export async function sendNewMessageEmail(params: NewMessageEmailParams): Promise<boolean> {
+export async function sendNewMessageEmail(
+  params: NewMessageEmailParams,
+  siteInfo?: { siteName: string; siteUrl: string }
+): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
     console.warn('[email] RESEND_API_KEY not set — skipping new-message notification')
@@ -92,6 +97,9 @@ export async function sendNewMessageEmail(params: NewMessageEmailParams): Promis
     return false
   }
 
+  const siteName = siteInfo?.siteName || SITE_NAME
+  const siteUrl = siteInfo?.siteUrl || SITE_URL
+
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -100,10 +108,10 @@ export async function sendNewMessageEmail(params: NewMessageEmailParams): Promis
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: FROM_ADDRESS,
+        from: process.env.RESEND_FROM || `${siteName} <onboarding@resend.dev>`,
         to: params.to,
         subject: `New message from ${params.senderName} about ${params.listingTitle}`,
-        html: buildHtml(params),
+        html: buildHtml({ ...params, siteName, siteUrl }),
       }),
     })
 
@@ -119,6 +127,6 @@ export async function sendNewMessageEmail(params: NewMessageEmailParams): Promis
   }
 }
 
-export function buildThreadUrl(conversationId: string): string {
-  return `${SITE_URL}/messages/${conversationId}`
+export function buildThreadUrl(conversationId: string, siteUrl?: string): string {
+  return `${siteUrl || SITE_URL}/messages/${conversationId}`
 }

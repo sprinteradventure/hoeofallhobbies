@@ -4,8 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { Mail, KeyRound, MailCheck } from 'lucide-react'
+import { useSiteType, getSiteUrl } from '@/lib/site-context'
 
 export default function ForgotPasswordPage() {
+  const siteType = useSiteType()
+  const siteUrl = getSiteUrl(siteType)
+
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,7 +22,7 @@ export default function ForgotPasswordPage() {
 
     try {
       const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.hoeofallhobbies.com'}/auth/reset-password`,
+        redirectTo: `${siteUrl}/auth/reset-password`,
       })
 
       if (authError) throw authError

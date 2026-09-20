@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Search, Heart, Filter, ChevronDown, ChevronRight, X, Tag } from 'lucide-react'
+import { Search, Heart, Filter, ChevronDown, X, Tag } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
-import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
+import { getSubcategoriesForCategory } from '@/lib/categories'
+import { useSiteCategories, useSiteType } from '@/lib/site-context'
 import ListingImage from '@/components/shop/ListingImage'
 
 import { Suspense } from 'react'
@@ -29,7 +30,10 @@ function ProductsPage() {
   const searchParams = useSearchParams()
   const urlCategory = searchParams.get('category') || ''
   const urlSubcategory = searchParams.get('subcategory') || ''
-  
+
+  const siteType = useSiteType()
+  const siteCategories = useSiteCategories()
+
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -115,7 +119,7 @@ function ProductsPage() {
                   className="input w-full pl-11"
                 />
               </div>
-              <button 
+              <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`btn px-4 ${showFilters ? 'btn-primary' : 'btn-ghost border border-blush'}`}
               >
@@ -151,7 +155,7 @@ function ProductsPage() {
                     <X className="h-3 w-3" />
                   </button>
                 ))}
-                <button 
+                <button
                   onClick={() => {
                     setSelectedCategory('')
                     setSelectedSubcategory('')
@@ -190,11 +194,11 @@ function ProductsPage() {
                     All Products
                   </button>
 
-                  {CATEGORIES.map((category) => {
-                    const subcategories = getSubcategoriesForCategory(category.name)
+                  {siteCategories.map((category) => {
+                    const subcategories = getSubcategoriesForCategory(category.name, siteCategories)
                     const isExpanded = expandedCategory === category.name
                     const isActive = selectedCategory === category.name
-                    
+
                     return (
                       <div key={category.slug}>
                         <button
@@ -215,8 +219,8 @@ function ProductsPage() {
                         >
                           <span>{category.name}</span>
                           {subcategories.length > 0 && (
-                            <ChevronDown 
-                              className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                            <ChevronDown
+                              className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                             />
                           )}
                         </button>
@@ -230,8 +234,8 @@ function ProductsPage() {
                                   setSelectedSubcategory(sub === selectedSubcategory ? '' : sub)
                                 }}
                                 className={`w-full text-left px-3 py-1.5 rounded text-xs transition-colors ${
-                                  selectedSubcategory === sub 
-                                    ? 'text-gold font-semibold bg-gold/5' 
+                                  selectedSubcategory === sub
+                                    ? 'text-gold font-semibold bg-gold/5'
                                     : 'text-taupe hover:text-gold hover:bg-white'
                                 }`}
                               >
@@ -282,7 +286,7 @@ function ProductsPage() {
                   Nothing here yet
                 </p>
                 <p className="text-taupe text-sm mb-8 font-lora max-w-sm mx-auto leading-relaxed">
-                  Be the first to list something! Your unused supplies could find a new creative home.
+                  Be the first to list something! Your unused supplies could find a new home.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Link href="/sell" className="btn btn-primary px-8 py-3 font-cormorant tracking-wider">
@@ -356,8 +360,8 @@ function ProductsPage() {
                           ${product.price.toFixed(2)}
                         </p>
                         <span className={`text-xs px-2 py-1 rounded-full ${
-                          product.quantity > 0 
-                            ? 'bg-green-50 text-green-600' 
+                          product.quantity > 0
+                            ? 'bg-green-50 text-green-600'
                             : 'bg-red-50 text-red-600'
                         }`}>
                           {product.quantity > 0 ? `${product.quantity} in stock` : 'Out of Stock'}

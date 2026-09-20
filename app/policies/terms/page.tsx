@@ -1,12 +1,18 @@
 import type { Metadata } from 'next'
+import { getSiteName, getSiteDescription } from '@/lib/site-context-server'
 
-export const metadata: Metadata = {
-  title: 'Terms of Service | Hoe of All Hobbies',
-  description:
-    'The terms that govern buying and selling on Hoe of All Hobbies, a curated marketplace for craft and hobby supplies.',
+export async function generateMetadata(): Promise<Metadata> {
+  const siteName = await getSiteName()
+  return {
+    title: `Terms of Service | ${siteName}`,
+    description:
+      `The terms that govern buying and selling on ${siteName}.`,
+  }
 }
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const siteName = await getSiteName()
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">Terms of Service</h1>
@@ -16,8 +22,8 @@ export default function TermsPage() {
         <section className="card">
           <h2 className="font-cormorant text-2xl font-bold text-charcoal mb-3">1. Who we are</h2>
           <p>
-            Hoe of All Hobbies (&quot;we&quot;, &quot;the platform&quot;) operates an online
-            marketplace where independent sellers list and sell craft and hobby supplies directly
+            {siteName} (&quot;we&quot;, &quot;the platform&quot;) operates an online
+            marketplace where independent sellers list and sell items directly
             to buyers. We provide the venue; sellers are responsible for their listings, inventory,
             fulfilment, and customer service.
           </p>
@@ -87,7 +93,7 @@ export default function TermsPage() {
             7. Limitation of liability
           </h2>
           <p>
-            To the maximum extent permitted by law, Hoe of All Hobbies is not liable for indirect,
+            To the maximum extent permitted by law, {siteName} is not liable for indirect,
             incidental, or consequential damages arising from marketplace transactions. Our total
             liability for any claim is limited to the fees we collected for the transaction at
             issue.

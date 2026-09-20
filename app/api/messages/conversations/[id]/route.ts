@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { getUserFromRequest } from '../../auth'
 import { sendNewMessageEmail, buildThreadUrl } from '@/lib/email'
+import { getSiteIdentity } from '@/lib/site-context-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -155,11 +156,6 @@ export async function POST(
     if (insertError) throw insertError
 
     // --- New-message email notification (throttled, fire-and-forget) --------
-    // At most one email per recipient per thread until they've read/replied:
-    // clear the sender's own flag (they've clearly seen the thread), then
-    // atomically claim the recipient's flag — only the request that flips it
-    // from NULL sends the email, so rapid-fire or concurrent sends can't
-    // double-notify. See 014_message_notifications.sql.
     const senderIsBuyer = conversation.buyer_id === user.id
     const senderFlag = senderIsBuyer ? 'buyer_notified_at' : 'seller_notified_at'
     const recipientFlag = senderIsBuyer ? 'seller_notified_at' : 'buyer_notified_at'
@@ -178,12 +174,7 @@ export async function POST(
       const bodyText = parsed.data.body
       const recipientId = senderIsBuyer ? conversation.seller_id : conversation.buyer_id
 
-      // Respect the recipient's opt-out (migration 015). The throttle flag
-      // above is claimed either way, so re-enabling later doesn't change
-      // behavior. Looked up separately from the conversation embed because
-      // PostgREST would reject the whole thread query if it selected a column
-      // that doesn't exist yet — a failed lookup defaults to ENABLED so the
-      // route keeps working (and emailing) before 015 is applied.
+      // Respect the recipient's opt-out (migration 015)
       let optedOut = false
       const { data: prefRow, error: prefError } = await admin
         .from('user_profiles')
@@ -191,22 +182,25 @@ export async function POST(
         .eq('id', recipientId)
         .single()
       if (!prefError) {
-        // NULL/missing means enabled; only an explicit false opts out.
         optedOut = prefRow?.message_email_notifications === false
       }
 
       if (!optedOut) {
-        // Fire-and-forget: never block the 201 on email delivery. Failures are
-        // logged inside sendNewMessageEmail; messaging keeps working even when
-        // email is misconfigured.
-        sendNewMessageEmail({
-          to: recipientProfile?.email || '',
-          recipientName: displayName(recipientProfile),
-          senderName: displayName(senderProfile),
-          listingTitle: product?.title || 'your listing',
-          snippet: bodyText.length > 140 ? `${bodyText.slice(0, 140)}…` : bodyText,
-          threadUrl: buildThreadUrl(conversation.id),
-        }).catch((err) => console.error('[email] notification error:', err))
+        // Determine site identity from request host for correct branding in email
+        const host = request.headers.get('host') || ''
+        const { SITE_NAME, SITE_URL } = getSiteIdentity(host)
+
+        sendNewMessageEmail(
+          {
+            to: recipientProfile?.email || '',
+            recipientName: displayName(recipientProfile),
+            senderName: displayName(senderProfile),
+            listingTitle: product?.title || 'your listing',
+            snippet: bodyText.length > 140 ? `${bodyText.slice(0, 140)}…` : bodyText,
+            threadUrl: buildThreadUrl(conversation.id, SITE_URL),
+          },
+          { siteName: SITE_NAME, siteUrl: SITE_URL }
+        ).catch((err) => console.error('[email] notification error:', err))
       }
     }
 

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { ShoppingCart, Menu, X, ChevronDown, ShieldCheck, MessageCircle } from 'lucide-react'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { SmallMonogram } from './BrandLogo'
+import { useSiteType, useSiteCategories, getSiteName } from '@/lib/site-context'
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -16,6 +17,11 @@ export default function Navbar() {
   const pathname = usePathname()
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+
+  const siteType = useSiteType()
+  const siteCategories = useSiteCategories()
+  const siteName = getSiteName(siteType)
+  const isHolidays = siteType === 'holidays'
 
   // ── Close menu on route change ───────────────────────────────────────────
   useEffect(() => {
@@ -225,7 +231,7 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-3" onClick={closeMenu}>
             <SmallMonogram />
             <span className="font-cormorant text-xl font-bold text-charcoal hidden sm:inline tracking-wide">
-              Hoe of All Hobbies
+              {siteName}
             </span>
           </Link>
 

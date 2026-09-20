@@ -1,17 +1,19 @@
 import type { MetadataRoute } from 'next'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-import { SITE_URL } from '@/lib/site'
+import { getSiteUrl } from '@/lib/site-context-server'
 
 export const dynamic = 'force-dynamic'
 
 // /sitemap.xml — static public routes + every active product listing.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const siteUrl = await getSiteUrl()
+
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: `${SITE_URL}/`, changeFrequency: 'daily', priority: 1.0 },
-    { url: `${SITE_URL}/shop`, changeFrequency: 'daily', priority: 0.8 },
-    { url: `${SITE_URL}/shop/products`, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${SITE_URL}/categories`, changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${SITE_URL}/sell`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${siteUrl}/`, changeFrequency: 'daily', priority: 1.0 },
+    { url: `${siteUrl}/shop`, changeFrequency: 'daily', priority: 0.8 },
+    { url: `${siteUrl}/shop/products`, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${siteUrl}/categories`, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${siteUrl}/sell`, changeFrequency: 'monthly', priority: 0.5 },
   ]
 
   try {
@@ -25,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (error) throw error
 
     const productRoutes: MetadataRoute.Sitemap = (products || []).map((p: any) => ({
-      url: `${SITE_URL}/shop/products/${p.id}`,
+      url: `${siteUrl}/shop/products/${p.id}`,
       lastModified: p.updated_at || p.listing_date || undefined,
       changeFrequency: 'weekly',
       priority: 0.6,

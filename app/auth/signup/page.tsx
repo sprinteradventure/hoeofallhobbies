@@ -5,9 +5,14 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { Mail, Lock, User, UserPlus } from 'lucide-react'
+import { useSiteType, getSiteName, getSiteUrl } from '@/lib/site-context'
 
 export default function SignupPage() {
   const router = useRouter()
+  const siteType = useSiteType()
+  const siteName = getSiteName(siteType)
+  const siteUrl = getSiteUrl(siteType)
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
@@ -25,7 +30,7 @@ export default function SignupPage() {
         password,
         options: {
           data: { username: username || email.split('@')[0] },
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.hoeofallhobbies.com'}/auth/callback`,
+          emailRedirectTo: `${siteUrl}/auth/callback`,
         },
       })
 
@@ -48,7 +53,7 @@ export default function SignupPage() {
         <div className="text-center mb-8">
           <img src="/images/logo-of-all.png" alt="of all" className="h-12 mx-auto mb-4 object-contain" />
           <h1 className="font-cormorant text-3xl font-bold text-charcoal">Create Account</h1>
-          <p className="text-taupe font-lora mt-1">Join the Hoe of All Hobbies community</p>
+          <p className="text-taupe font-lora mt-1">Join the {siteName} community</p>
         </div>
 
         <div className="card">

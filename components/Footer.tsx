@@ -1,5 +1,8 @@
+'use client'
+
 import Link from 'next/link'
 import { SmallMonogram } from './BrandLogo'
+import { useSiteType, getSiteName, getSiteDescription } from '@/lib/site-context'
 
 const SHOP_LINKS = [
   { href: '/shop/products', label: 'All Products' },
@@ -54,6 +57,10 @@ function FooterColumn({
 }
 
 export default function Footer() {
+  const siteType = useSiteType()
+  const siteName = getSiteName(siteType)
+  const siteDescription = getSiteDescription(siteType)
+
   return (
     <footer className="border-t border-blush bg-ivory text-charcoal mt-0">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
@@ -61,10 +68,10 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <SmallMonogram />
-              <span className="font-cormorant font-bold text-lg tracking-wide">Hoe of All Hobbies</span>
+              <span className="font-cormorant font-bold text-lg tracking-wide">{siteName}</span>
             </div>
             <p className="text-sm text-taupe font-lora leading-relaxed">
-              Sustainable finds for creative minds. A curated marketplace for craft and hobby supplies.
+              {siteDescription}
             </p>
             <a
               href="mailto:hoardstashco@gmail.com"
@@ -83,7 +90,7 @@ export default function Footer() {
             <SmallMonogram />
           </div>
           <p className="text-taupe text-sm font-lora">
-            &copy; 2026 Hoe of All Hobbies. All rights reserved.
+            &copy; 2026 {siteName}. All rights reserved.
           </p>
         </div>
       </div>

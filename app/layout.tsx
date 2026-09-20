@@ -3,7 +3,7 @@ import { Cormorant, Lora, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, DEFAULT_OG_IMAGE } from '@/lib/site'
+import { getSiteName, getSiteUrl, getSiteDescription } from '@/lib/site-context-server'
 
 const cormorant = Cormorant({
   subsets: ['latin'],
@@ -26,31 +26,41 @@ const playfair = Playfair_Display({
   weight: ['400', '500', '600', '700'],
 })
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: `${SITE_NAME} - Sustainable Craft Supplies Marketplace`,
-  description: SITE_DESCRIPTION,
-  alternates: { canonical: '/' },
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: SITE_URL,
-    siteName: SITE_NAME,
-    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: SITE_NAME }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: `${SITE_NAME} - Sustainable Craft Supplies Marketplace`,
-    description: SITE_DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
-  verification: {
-    // Pinterest domain verification (renders <meta name="p:domain_verify">)
-    other: { 'p:domain_verify': '2bd6b860031482ec30bc9ddb6003bc20' },
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const siteName = await getSiteName()
+  const siteUrl = await getSiteUrl()
+  const siteDescription = await getSiteDescription()
+  const defaultTitle =
+    siteName === 'Hoe of All Holidays'
+      ? `${siteName} - Holiday Decor & Party Supplies Marketplace`
+      : `${siteName} - Sustainable Craft Supplies Marketplace`
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: defaultTitle,
+    description: siteDescription,
+    alternates: { canonical: '/' },
+    openGraph: {
+      type: 'website',
+      locale: 'en_US',
+      url: siteUrl,
+      siteName: siteName,
+      images: [{ url: '/og-image.png', width: 1200, height: 630, alt: siteName }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: defaultTitle,
+      description: siteDescription,
+      images: ['/og-image.png'],
+    },
+    verification: {
+      // Pinterest domain verification (renders <meta name="p:domain_verify">)
+      other: { 'p:domain_verify': '2bd6b860031482ec30bc9ddb6003bc20' },
+    },
+  }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode

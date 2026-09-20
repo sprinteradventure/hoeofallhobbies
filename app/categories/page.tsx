@@ -1,13 +1,22 @@
 import Link from 'next/link'
-import { CATEGORIES } from '@/lib/categories'
+import { getSiteCategories, getSiteName } from '@/lib/site-context-server'
 import { ChevronRight } from 'lucide-react'
 
-export const metadata = {
-  title: 'Browse Categories - Hoe of All Hobbies',
-  description: 'Explore all craft and hobby supply categories.',
+export async function generateMetadata() {
+  const siteName = await getSiteName()
+  return {
+    title: `Browse Categories - ${siteName}`,
+    description: siteName === 'Hoe of All Holidays'
+      ? 'Explore all holiday decor and party supply categories.'
+      : 'Explore all craft and hobby supply categories.',
+  }
 }
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
+  const categories = await getSiteCategories()
+  const siteName = await getSiteName()
+  const isHolidays = siteName === 'Hoe of All Holidays'
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12">
       <div className="mb-10 text-center">
@@ -15,13 +24,14 @@ export default function CategoriesPage() {
           Browse Categories
         </h1>
         <p className="text-taupe max-w-2xl mx-auto">
-          Find supplies for every craft and hobby — from fabric and yarn to
-          resin, clay, and everything in between.
+          {isHolidays
+            ? 'Find decorations and supplies for every holiday, party, and celebration — from Christmas to Diwali, weddings to graduations.'
+            : 'Find supplies for every craft and hobby — from fabric and yarn to resin, clay, and everything in between.'}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {CATEGORIES.map((category) => (
+        {categories.map((category) => (
           <div
             key={category.slug}
             className="card hover:border-gold/60 hover:shadow-md transition-all"

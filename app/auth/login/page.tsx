@@ -5,9 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { Mail, Lock, LogIn } from 'lucide-react'
+import { useSiteType, getSiteName } from '@/lib/site-context'
 
 export default function LoginPage() {
   const router = useRouter()
+  const siteType = useSiteType()
+  const siteName = getSiteName(siteType)
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -42,7 +46,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <img src="/images/logo-of-all.png" alt="of all" className="h-12 mx-auto mb-4 object-contain" />
           <h1 className="font-cormorant text-3xl font-bold text-charcoal">Welcome Back</h1>
-          <p className="text-taupe font-lora mt-1">Sign in to your Hoe of All Hobbies account</p>
+          <p className="text-taupe font-lora mt-1">Sign in to your {siteName} account</p>
         </div>
 
         <div className="card">
