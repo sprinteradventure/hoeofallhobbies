@@ -16,6 +16,7 @@ const HOLIDAYS_DESCRIPTION =
   'Discover and sell holiday decor, party supplies, and celebration essentials for every culture, tradition, and occasion.'
 
 export const DEFAULT_OG_IMAGE = '/og-image.png'
+export const HOLIDAYS_OG_IMAGE = '/og-image-holidays.png'
 
 // Server-side helper: call in Server Components / Route Handlers / API routes
 export function getSiteIdentity(host?: string | null) {
@@ -29,7 +30,7 @@ export function getSiteIdentity(host?: string | null) {
       SITE_NAME: HOLIDAYS_NAME,
       SITE_URL: HOLIDAYS_URL,
       SITE_DESCRIPTION: HOLIDAYS_DESCRIPTION,
-      DEFAULT_OG_IMAGE,
+      DEFAULT_OG_IMAGE: HOLIDAYS_OG_IMAGE,
     }
   }
 

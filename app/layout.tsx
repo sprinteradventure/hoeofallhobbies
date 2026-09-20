@@ -30,28 +30,36 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteName = await getSiteName()
   const siteUrl = await getSiteUrl()
   const siteDescription = await getSiteDescription()
-  const defaultTitle =
-    siteName === 'Hoe of All Holidays'
-      ? `${siteName} - Holiday Decor & Party Supplies Marketplace`
-      : `${siteName} - Sustainable Craft Supplies Marketplace`
+  const isHolidays = siteName === 'Hoe of All Holidays'
+  const defaultTitle = isHolidays
+    ? `${siteName} - Holiday Decor & Party Supplies Marketplace`
+    : `${siteName} - Sustainable Craft Supplies Marketplace`
+  const ogImage = isHolidays ? '/og-image-holidays.png' : '/og-image.png'
 
   return {
     metadataBase: new URL(siteUrl),
     title: defaultTitle,
     description: siteDescription,
     alternates: { canonical: '/' },
+    icons: {
+      icon: [
+        { url: '/api/brand-icon?t=favicon', sizes: '48x48' },
+        { url: '/api/brand-icon?t=icon', type: 'image/png', sizes: '512x512' },
+      ],
+      apple: '/api/brand-icon?t=apple',
+    },
     openGraph: {
       type: 'website',
       locale: 'en_US',
       url: siteUrl,
       siteName: siteName,
-      images: [{ url: '/og-image.png', width: 1200, height: 630, alt: siteName }],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: siteName }],
     },
     twitter: {
       card: 'summary_large_image',
       title: defaultTitle,
       description: siteDescription,
-      images: ['/og-image.png'],
+      images: [ogImage],
     },
     verification: {
       // Pinterest domain verification (renders <meta name="p:domain_verify">)

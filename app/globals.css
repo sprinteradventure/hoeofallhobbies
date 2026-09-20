@@ -23,9 +23,10 @@
    brand (holly green, antique gold, brick-red bow on ivory).
    Applied as a class on <html> by app/layout.tsx for the holidays site. */
 .site-holidays {
-  --color-ivory: #f1ebdd;
-  --color-blush: #e6dcc3;
-  --color-taupe: #857a63;
+  --color-cream: #fdfcf9;         /* airy warm white base */
+  --color-ivory: #f7f2e7;         /* light parchment */
+  --color-blush: #f0e9d6;         /* soft sand */
+  --color-taupe: #958a72;
   --color-charcoal: #33402f;      /* deep evergreen */
   --color-charcoal-dark: #27321f;
   --color-holly: #3d5a3a;

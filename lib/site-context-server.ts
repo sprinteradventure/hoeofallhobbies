@@ -50,7 +50,7 @@ export function getSiteIdentity(host?: string | null) {
       SITE_URL: 'https://www.hoeofallholidays.com',
       SITE_DESCRIPTION:
         'Discover and sell holiday decor, party supplies, and celebration essentials for every culture, tradition, and occasion.',
-      DEFAULT_OG_IMAGE: '/og-image.png',
+      DEFAULT_OG_IMAGE: '/og-image-holidays.png',
     }
   }
 
