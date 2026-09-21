@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation'
 import { ShoppingCart, Menu, X, ChevronDown, ShieldCheck, MessageCircle } from 'lucide-react'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { SmallMonogram } from './BrandLogo'
-import { useSiteType, useSiteCategories, getSiteName } from '@/lib/site-context'
+import { getSiteCategories, getSiteName } from '@/lib/site-context'
 
-export default function Navbar() {
+export default function Navbar({ isHolidays }: { isHolidays: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const [categoryOpen, setCategoryOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -18,10 +18,9 @@ export default function Navbar() {
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  const siteType = useSiteType()
-  const siteCategories = useSiteCategories()
+  const siteType = isHolidays ? 'holidays' as const : 'hobbies' as const
+  const siteCategories = getSiteCategories(siteType)
   const siteName = getSiteName(siteType)
-  const isHolidays = siteType === 'holidays'
 
   // ── Close menu on route change ───────────────────────────────────────────
   useEffect(() => {
@@ -229,7 +228,7 @@ export default function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <Link href="/" className="flex items-center gap-3" onClick={closeMenu}>
-            <SmallMonogram />
+            <SmallMonogram isHolidays={isHolidays} />
             <span className="font-cormorant text-xl font-bold text-charcoal hidden sm:inline tracking-wide">
               {siteName}
             </span>

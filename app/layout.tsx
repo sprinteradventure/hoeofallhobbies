@@ -80,11 +80,11 @@ export default async function RootLayout({
       className={`${cormorant.variable} ${lora.variable} ${playfair.variable}${siteType === 'holidays' ? ' site-holidays' : ''}`}
     >
       <body className="font-lora antialiased bg-cream text-charcoal">
-        <Navbar />
+        <Navbar isHolidays={siteType === 'holidays'} />
         <main className="min-h-screen">
           {children}
         </main>
-        <Footer />
+        <Footer isHolidays={siteType === 'holidays'} />
       </body>
     </html>
   )

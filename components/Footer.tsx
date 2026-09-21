@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { SmallMonogram } from './BrandLogo'
-import { useSiteType, getSiteName, getSiteDescription } from '@/lib/site-context'
+import { getSiteName, getSiteDescription } from '@/lib/site-context'
 
 const SHOP_LINKS = [
   { href: '/shop/products', label: 'All Products' },
@@ -56,8 +56,8 @@ function FooterColumn({
   )
 }
 
-export default function Footer() {
-  const siteType = useSiteType()
+export default function Footer({ isHolidays }: { isHolidays: boolean }) {
+  const siteType = isHolidays ? 'holidays' as const : 'hobbies' as const
   const siteName = getSiteName(siteType)
   const siteDescription = getSiteDescription(siteType)
 
@@ -67,7 +67,7 @@ export default function Footer() {
         <div className="grid md:grid-cols-5 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <SmallMonogram />
+              <SmallMonogram isHolidays={isHolidays} />
               <span className="font-cormorant font-bold text-lg tracking-wide">{siteName}</span>
             </div>
             <p className="text-sm text-taupe font-lora leading-relaxed">
@@ -87,7 +87,7 @@ export default function Footer() {
         </div>
         <div className="border-t border-blush pt-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <SmallMonogram />
+            <SmallMonogram isHolidays={isHolidays} />
           </div>
           <p className="text-taupe text-sm font-lora">
             &copy; 2026 {siteName}. All rights reserved.

@@ -132,9 +132,9 @@ export function RibbonDivider() {
   );
 }
 
-export function SmallMonogram() {
+export function SmallMonogram({ isHolidays: isHolidaysProp }: { isHolidays?: boolean }) {
   const siteType = useSiteType()
-  const isHolidays = siteType === 'holidays'
+  const isHolidays = isHolidaysProp ?? siteType === 'holidays'
   return (
     <img
       src={isHolidays ? '/images/holidays-icon.png' : '/images/hoe-icon-64.png'}
