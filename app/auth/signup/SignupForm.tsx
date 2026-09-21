@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { getSupabase } from '@/lib/supabase/client-lazy'
 import { Mail, Lock, User, UserPlus } from 'lucide-react'
 import { getSiteName, getSiteUrl } from '@/lib/site-context'
+import TurnstileWidget, { resetTurnstile } from '@/components/TurnstileWidget'
 
 export default function SignupForm({ isHolidays }: { isHolidays: boolean }) {
   const router = useRouter()
@@ -19,6 +20,10 @@ export default function SignupForm({ isHolidays }: { isHolidays: boolean }) {
   const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+
+  // Only require a CAPTCHA token when a Turnstile site key is configured.
+  const captchaRequired = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
@@ -31,12 +36,21 @@ export default function SignupForm({ isHolidays }: { isHolidays: boolean }) {
         email,
         password,
         options: {
+          captchaToken: captchaRequired ? captchaToken : undefined,
           data: { username: username || email.split('@')[0] },
           emailRedirectTo: `${siteUrl}/auth/callback`,
         },
       })
 
-      if (authError) throw authError
+      if (authError) {
+        // If Supabase rejected the challenge, give the user a fresh one.
+        const msg = authError.message?.toLowerCase() ?? ''
+        if (msg.includes('captcha') || msg.includes('challenge')) {
+          setCaptchaToken(null)
+          resetTurnstile()
+        }
+        throw authError
+      }
 
       // user_profiles row is created server-side by the on_auth_user_created
       // trigger (migration 008). A direct insert here can never succeed before
@@ -111,9 +125,16 @@ export default function SignupForm({ isHolidays }: { isHolidays: boolean }) {
               </div>
             </div>
 
+            {captchaRequired && (
+              <TurnstileWidget
+                onSuccess={setCaptchaToken}
+                onExpire={() => setCaptchaToken(null)}
+              />
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (captchaRequired && !captchaToken)}
               className="btn btn-primary w-full py-3 flex items-center justify-center gap-2"
             >
               <UserPlus className="h-4 w-4" />
