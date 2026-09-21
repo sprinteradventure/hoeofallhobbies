@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Send } from 'lucide-react'
+import { ArrowLeft, Flag, Send } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Message } from '@/lib/types'
 import ListingImage from '@/components/shop/ListingImage'
@@ -117,6 +117,43 @@ export default function ConversationPage() {
     }
   }
 
+  async function handleReportUser() {
+    const otherId = thread?.other_party?.id
+    if (!otherId) return
+
+    const reason = window.prompt(
+      `Report ${thread!.other_party.name}?\n\nBriefly describe the problem (harassment, scam, off-platform payment request, etc.). Leave blank to report with reason "Other".`
+    )
+    if (reason === null) return // cancelled
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push(`/auth/login?redirect=${encodeURIComponent(`/messages/${conversationId}`)}`)
+        return
+      }
+
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          reported_user_id: otherId,
+          conversation_id: conversationId,
+          reason: reason.trim() ? 'Other' : 'Harassment or abusive behavior',
+          details: reason.trim() || null,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'Failed to submit report.')
+      window.alert('Report submitted. Our moderation team will review it.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit report.')
+    }
+  }
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
@@ -139,12 +176,23 @@ export default function ConversationPage() {
         <Link href="/messages" className="text-taupe hover:text-gold transition-colors" aria-label="Back to messages">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="font-cormorant text-2xl font-bold text-charcoal">{thread.other_party.name}</h1>
           <p className="text-xs text-taupe uppercase tracking-wider">
             {thread.role === 'buyer' ? 'Seller' : 'Buyer'}
           </p>
         </div>
+        {thread.other_party.id && (
+          <button
+            type="button"
+            onClick={handleReportUser}
+            className="ml-auto inline-flex items-center gap-1.5 text-xs text-taupe hover:text-red-700 border border-blush hover:border-red-300 rounded-full px-3 py-1.5 transition-colors"
+            title={`Report ${thread.other_party.name}`}
+          >
+            <Flag className="h-3.5 w-3.5" />
+            Report
+          </button>
+        )}
       </div>
 
       {/* Listing context card */}

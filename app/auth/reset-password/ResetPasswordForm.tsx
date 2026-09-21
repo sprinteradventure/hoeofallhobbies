@@ -25,6 +25,24 @@ export default function ResetPasswordForm({ isHolidays }: { isHolidays: boolean 
       const supabase = await getSupabase()
       if (cancelled) return
 
+      // R9: Supabase recovery links may arrive as ?code= (PKCE flow, same as
+      // the email-confirmation fix in app/auth/callback/page.tsx). The code
+      // MUST be exchanged for a session; without this the reset page never
+      // sees a session and shows "Link Expired" for valid links. Hash-based
+      // (#access_token=...) links still work: supabase-js auto-detects them
+      // and getSession() below picks the session up.
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
+      if (code) {
+        try {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          if (exchangeError) console.error('Recovery code exchange failed:', exchangeError)
+        } catch (err) {
+          console.error('Recovery code exchange failed:', err)
+        }
+        if (cancelled) return
+      }
+
       const { data } = await supabase.auth.getSession()
       if (cancelled) return
       setState(data.session ? 'ready' : 'no-session')

@@ -181,22 +181,25 @@ export default function NewListingPage() {
         throw new Error('Please choose at least one category.')
       }
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
 
-      const { error: insertError } = await supabase
-        .from('products')
-        .insert({
-          seller_id: user.id,
+      // R3: creation goes through the server route (validation, content
+      // screening, rate limits, service-role insert). The `site` tag is
+      // derived server-side from the request host — not sent here.
+      const res = await fetch('/api/listings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
           title: formData.title,
           description: formData.description,
           category: selectedCategories[0],
           subcategory: selectedSubcategories[0] || null,
           categories: selectedCategories,
           subcategories: selectedSubcategories,
-          // Tag the listing for the marketplace it was created on so it only
-          // appears on that site (migration 016).
-          site: siteType,
           price: parseFloat(formData.price),
           condition: formData.condition,
           quantity: parseInt(formData.quantity),
@@ -205,12 +208,17 @@ export default function NewListingPage() {
           length_in: formData.length_in ? parseFloat(formData.length_in) : null,
           width_in: formData.width_in ? parseFloat(formData.width_in) : null,
           height_in: formData.height_in ? parseFloat(formData.height_in) : null,
-          is_active: true,
           images: imageUrls.length > 0 ? imageUrls : [],
           video_url: videoUrl,
-        })
+        }),
+      })
 
-      if (insertError) throw insertError
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        // 422 screening failures include a user-safe message naming the
+        // matched categories (never the raw banned words).
+        throw new Error(data.error || 'Failed to create listing')
+      }
       router.push('/seller/listings')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create listing')

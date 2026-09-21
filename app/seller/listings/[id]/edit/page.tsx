@@ -181,9 +181,18 @@ export default function EditListingPage() {
         )
       }
 
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
+
+      // R3: edits go through the server route — owner check, content
+      // screening, and a 30 edits/day quota are enforced there.
+      const res = await fetch(`/api/listings/${productId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
           title: formData.title,
           description: formData.description,
           category: formData.category,
@@ -193,10 +202,13 @@ export default function EditListingPage() {
           quantity: parseInt(formData.quantity),
           tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
           is_active: formData.is_active,
-        })
-        .eq('id', productId)
+        }),
+      })
 
-      if (updateError) throw updateError
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update listing')
+      }
       router.push('/seller/listings')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update listing')
