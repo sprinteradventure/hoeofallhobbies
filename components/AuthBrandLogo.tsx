@@ -4,9 +4,11 @@ import { useSiteType } from '@/lib/site-context'
 
 // Brand lockup used at the top of auth pages. Shows the holidays wreath
 // logo on hoeofallholidays.com and the hobbies logo on hoeofallhobbies.com.
-export default function AuthBrandLogo() {
+// Pass isHolidays from a Server Component to render the right logo on the
+// server (no flash); when omitted it falls back to the site-type cookie.
+export default function AuthBrandLogo({ isHolidays: isHolidaysProp }: { isHolidays?: boolean }) {
   const siteType = useSiteType()
-  const isHolidays = siteType === 'holidays'
+  const isHolidays = isHolidaysProp ?? siteType === 'holidays'
   return (
     <img
       src={isHolidays ? '/images/holidays-logo.png' : '/images/logo-of-all.png'}
