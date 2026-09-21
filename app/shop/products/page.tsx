@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Search, Heart, Filter, ChevronDown, X, Tag } from 'lucide-react'
+import { Search, Heart, Filter, ChevronDown, X, Tag, Gift } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { getSubcategoriesForCategory } from '@/lib/categories'
@@ -284,17 +284,26 @@ function ProductsPage() {
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-20">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-blush bg-white">
-                  <Tag className="h-8 w-8 text-gold" strokeWidth={1.25} />
+                  {siteType === 'holidays' ? (
+                    <Gift className="h-8 w-8 text-gold" strokeWidth={1.25} />
+                  ) : (
+                    <Tag className="h-8 w-8 text-gold" strokeWidth={1.25} />
+                  )}
                 </div>
                 <p className="font-cormorant text-2xl font-bold text-charcoal mb-2">
-                  Nothing here yet
+                  {siteType === 'holidays' ? 'The celebration starts with you' : 'Nothing here yet'}
                 </p>
                 <p className="text-taupe text-sm mb-8 font-lora max-w-sm mx-auto leading-relaxed">
-                  Be the first to list something! Your unused supplies could find a new home.
+                  {siteType === 'holidays'
+                    ? 'Be the first to list holiday decor, party supplies, and celebration finds — from Christmas to Diwali, birthdays to Lunar New Year.'
+                    : 'Be the first to list something! Your unused supplies could find a new home.'}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Link href="/sell" className="btn btn-primary px-8 py-3 font-cormorant tracking-wider">
-                    Start Selling
+                  <Link
+                    href={siteType === 'holidays' ? '/seller/listings/new' : '/sell'}
+                    className="btn btn-primary px-8 py-3 font-cormorant tracking-wider"
+                  >
+                    {siteType === 'holidays' ? 'List the First Item' : 'Start Selling'}
                   </Link>
                   <button
                     onClick={() => {
