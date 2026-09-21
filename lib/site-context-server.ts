@@ -8,7 +8,16 @@ import type { SiteType } from './site-context'
 
 export async function getSiteType(): Promise<SiteType> {
   const h = await headers()
-  return (h.get('x-site-type') as SiteType) || 'hobbies'
+  const headerType = h.get('x-site-type') as SiteType | null
+  if (headerType) return headerType
+  // Fallback: middleware skips some paths (sitemap.xml, robots.txt, static
+  // files), so infer the site from the Host header directly.
+  const host = (h.get('host') || '').toLowerCase()
+  return host === 'hoeofallholidays.com' ||
+    host === 'www.hoeofallholidays.com' ||
+    host === 'localhost:3001'
+    ? 'holidays'
+    : 'hobbies'
 }
 
 export async function getSiteCategories(): Promise<CategoryGroup[]> {

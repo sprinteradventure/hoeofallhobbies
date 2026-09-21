@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { buildFeedXml, FeedProduct } from '@/lib/feedXml'
-import { getSiteType } from '@/lib/site-context-server'
+import { getSiteType, getSiteName, getSiteUrl, getSiteDescription } from '@/lib/site-context-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +31,11 @@ export async function GET() {
 
     if (error) throw error
 
-    const xml = buildFeedXml((data || []) as FeedProduct[])
+    const xml = buildFeedXml((data || []) as FeedProduct[], {
+      name: await getSiteName(),
+      url: await getSiteUrl(),
+      description: await getSiteDescription(),
+    })
 
     return new NextResponse(xml, {
       headers: {
