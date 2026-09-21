@@ -1,5 +1,6 @@
 'use client'
 
+import AuthBrandLogo from '@/components/AuthBrandLogo'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -44,7 +45,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-b from-ivory to-cream">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/images/logo-of-all.png" alt="of all" className="h-12 mx-auto mb-4 object-contain" />
+<AuthBrandLogo />
           <h1 className="font-cormorant text-3xl font-bold text-charcoal">Welcome Back</h1>
           <p className="text-taupe font-lora mt-1">Sign in to your {siteName} account</p>
         </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import AuthBrandLogo from '@/components/AuthBrandLogo'
 import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
@@ -39,7 +40,7 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-b from-ivory to-cream">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <img src="/images/logo-of-all.png" alt="of all" className="h-12 mx-auto mb-4 object-contain" />
+<AuthBrandLogo />
             <h1 className="font-cormorant text-3xl font-bold text-charcoal">Check Your Email</h1>
             <p className="text-taupe font-lora mt-1">Your reset link is on its way</p>
           </div>
@@ -74,7 +75,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-b from-ivory to-cream">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/images/logo-of-all.png" alt="of all" className="h-12 mx-auto mb-4 object-contain" />
+<AuthBrandLogo />
           <h1 className="font-cormorant text-3xl font-bold text-charcoal">Reset Your Password</h1>
           <p className="text-taupe font-lora mt-1">We&apos;ll email you a link to set a new one</p>
         </div>

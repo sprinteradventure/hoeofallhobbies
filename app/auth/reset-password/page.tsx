@@ -1,5 +1,6 @@
 'use client'
 
+import AuthBrandLogo from '@/components/AuthBrandLogo'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
@@ -81,7 +82,7 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-b from-ivory to-cream">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <img src="/images/logo-of-all.png" alt="of all" className="h-12 mx-auto mb-4 object-contain" />
+<AuthBrandLogo />
             <h1 className="font-cormorant text-3xl font-bold text-charcoal">Link Expired</h1>
           </div>
 
@@ -113,7 +114,7 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-b from-ivory to-cream">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <img src="/images/logo-of-all.png" alt="of all" className="h-12 mx-auto mb-4 object-contain" />
+<AuthBrandLogo />
             <h1 className="font-cormorant text-3xl font-bold text-charcoal">Password Updated</h1>
           </div>
 
@@ -143,7 +144,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-b from-ivory to-cream">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/images/logo-of-all.png" alt="of all" className="h-12 mx-auto mb-4 object-contain" />
+<AuthBrandLogo />
           <h1 className="font-cormorant text-3xl font-bold text-charcoal">Choose a New Password</h1>
           <p className="text-taupe font-lora mt-1">Almost done — pick something memorable</p>
         </div>
