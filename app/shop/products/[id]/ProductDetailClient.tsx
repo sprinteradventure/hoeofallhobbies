@@ -19,6 +19,11 @@ const REPORT_REASONS = [
   'Other',
 ]
 
+// Safe seller columns only — migration 017 revoked SELECT on PII columns
+// (email, full_name, location, ship_*), so `user_profiles(*)` embeds error.
+const SELLER_SAFE_COLUMNS =
+  'id, username, seller_name, avatar_url, bio, is_seller, seller_verified, avg_rating, total_reviews, created_at'
+
 export default function ProductDetailClient() {
   const router = useRouter()
   const params = useParams()
@@ -54,7 +59,7 @@ export default function ProductDetailClient() {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*, seller:user_profiles(*)')
+        .select(`*, seller:user_profiles(${SELLER_SAFE_COLUMNS})`)
         .eq('id', productId)
         .single()
 
@@ -82,7 +87,7 @@ export default function ProductDetailClient() {
         const quoted = `"${String(data.category).replace(/"/g, '\\"')}"`
         const { data: related } = await supabase
           .from('products')
-          .select('*, seller:user_profiles(*)')
+          .select(`*, seller:user_profiles(${SELLER_SAFE_COLUMNS})`)
           .or(`category.eq.${quoted},categories.cs.{${quoted}}`)
           .or(`site.eq.${siteType},site.is.null`)
           .eq('is_active', true)

@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { getUserFromRequest } from '../../auth'
 import { sendNewMessageEmail, buildThreadUrl } from '@/lib/email'
 import { getSiteIdentity } from '@/lib/site-context-server'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -126,6 +127,14 @@ export async function POST(
     const user = await getUserFromRequest(request)
     if (!user) {
       return NextResponse.json({ error: 'Please sign in to send a message.' }, { status: 401 })
+    }
+
+    // R5/R6: anti-spam — 30 messages per user per 10 minutes.
+    if (!rateLimit(`messages:${user.id}`, 30, 10 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: 'You are sending messages too quickly. Please wait a moment.' },
+        { status: 429 }
+      )
     }
 
     const body = await request.json().catch(() => null)

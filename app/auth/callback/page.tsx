@@ -2,13 +2,31 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase/client'
 
 export default function CallbackPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirect to home after email confirmation
-    router.push('/')
+    // R9: the email-confirmation link carries ?code= which MUST be exchanged
+    // for a session; previously this page redirected without exchanging and
+    // the confirmation silently did nothing.
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    // Only allow internal redirect targets (open-redirect guard).
+    const next = params.get('next')
+    const destination =
+      next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
+
+    if (!code) {
+      router.replace(destination)
+      return
+    }
+
+    supabase.auth
+      .exchangeCodeForSession(code)
+      .catch((err) => console.error('Email confirmation exchange failed:', err))
+      .finally(() => router.replace(destination))
   }, [router])
 
   return (

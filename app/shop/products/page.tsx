@@ -59,7 +59,7 @@ function ProductsPage() {
       setLoading(true)
       let query = supabase
         .from('products')
-        .select('*, seller:user_profiles(*)')
+        .select('*, seller:user_profiles(id, username, seller_name, avatar_url, bio, is_seller, seller_verified, avg_rating, total_reviews, created_at)')
         .eq('is_active', true)
         // Segregate the catalog per marketplace: holidays visitors only see
         // holiday/party listings and vice versa. Rows predating migration 016

@@ -29,9 +29,12 @@ export default function SellerDashboard() {
         return
       }
 
+      // Migration 017: explicit safe columns only (select('*') now errors).
       const { data: profileData } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select(
+          'id, username, seller_name, is_seller, seller_verified, avg_rating, total_sales, created_at'
+        )
         .eq('id', user.id)
         .single()
 
@@ -39,7 +42,7 @@ export default function SellerDashboard() {
         await supabase.from('user_profiles').update({ is_seller: true }).eq('id', user.id)
       }
 
-      setProfile(profileData)
+      setProfile(profileData as unknown as UserProfile)
 
       const { data: products } = await supabase
         .from('products')

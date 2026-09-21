@@ -36,13 +36,17 @@ export default function AccountPage() {
       }
       setEmail(user.email || '')
 
+      // Migration 017 locks user_profiles down to safe columns (no PII) —
+      // select an explicit list; select('*') now errors.
       const { data } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select(
+          'id, username, seller_name, is_seller, message_email_notifications, created_at'
+        )
         .eq('id', user.id)
         .single()
 
-      setProfile(data)
+      setProfile(data as unknown as UserProfile)
       setSellerNameInput(data?.seller_name || '')
       // Missing/NULL means enabled (column may not exist pre-migration-015).
       setNotifEnabled(data?.message_email_notifications !== false)

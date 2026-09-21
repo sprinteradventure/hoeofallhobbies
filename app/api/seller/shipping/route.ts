@@ -6,6 +6,13 @@ export const dynamic = 'force-dynamic'
 // ============================================================================
 // SELLER SHIPPING SETTINGS — LIVE
 // ----------------------------------------------------------------------------
+// GET /api/seller/shipping
+// Authorization: Bearer <supabase access token>
+// Returns the caller's own ship-from address and default parcel. Needed
+// because migration 017 revoked client-side SELECT on the ship_* columns
+// (PII lockdown) — the settings page can no longer read them via the anon
+// key and must go through this self-only server route.
+//
 // POST /api/seller/shipping
 // Authorization: Bearer <supabase access token>
 // Saves the seller's ship-from address and default parcel onto their own
@@ -13,6 +20,38 @@ export const dynamic = 'force-dynamic'
 // quote and label; the default parcel is used whenever a listing has no
 // weight/dimension overrides of its own.
 // ============================================================================
+
+const SHIP_FIELDS =
+  'ship_name, ship_street1, ship_street2, ship_city, ship_state, ship_zip, ship_country, ship_phone, default_length_in, default_width_in, default_height_in, default_weight_oz' as const
+
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    const admin = getSupabaseAdmin()
+    const { data: { user }, error: userError } = await admin.auth.getUser(token)
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    const { data: profile, error: profileError } = await admin
+      .from('user_profiles')
+      .select(SHIP_FIELDS)
+      .eq('id', user.id)
+      .single()
+
+    if (profileError) throw profileError
+
+    return NextResponse.json({ settings: profile })
+  } catch (error) {
+    console.error('Seller shipping settings load error:', error)
+    return NextResponse.json({ error: 'Failed to load shipping settings.' }, { status: 500 })
+  }
+}
 
 const REQUIRED_FIELDS = ['ship_name', 'ship_street1', 'ship_city', 'ship_state', 'ship_zip'] as const
 

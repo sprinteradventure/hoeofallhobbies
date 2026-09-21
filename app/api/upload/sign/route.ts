@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic'
 // ----------------------------------------------------------------------------
 // POST /api/upload/sign
 // Authorization: Bearer <supabase access token>
-// Body: { kind: 'image' | 'video', contentType: string, fileName?: string }
+// Body: { kind: 'image' | 'video', contentType: string, fileName?: string, size?: number }
 //
 // Vercel serverless request bodies cap at ~4.5 MB, so large media cannot be
 // proxied through an API route. Instead we mint a signed upload URL on the
@@ -22,6 +23,15 @@ export const dynamic = 'force-dynamic'
 // ============================================================================
 
 const BUCKET = 'product-images'
+
+// R8: server-side size caps on what we sign for. Images are compressed
+// client-side to <= 10 MB (ImageUploader); videos legitimately run larger,
+// so they get their own 50 MB cap (VideoUploader) instead of a blanket 10 MB.
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024
+
+// R6: signed-upload minting is throttled per user (30/hour).
+const MAX_SIGN_PER_HOUR = 30
 
 const ALLOWED: Record<'image' | 'video', Record<string, string>> = {
   image: {
@@ -52,6 +62,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please sign in to upload media.' }, { status: 401 })
     }
     const user = userData.user
+
+    // R6: throttle signed-URL minting per user (each listing image can mint
+    // two URLs — main + thumbnail — so 30/hour is comfortably generous).
+    if (!rateLimit(`upload-sign:${user.id}`, MAX_SIGN_PER_HOUR, 60 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: 'Too many upload requests. Please try again later.' },
+        { status: 429 }
+      )
+    }
 
     const { data: profile, error: profileError } = await admin
       .from('user_profiles')
@@ -89,6 +108,30 @@ export async function POST(request: NextRequest) {
         },
         { status: 415 }
       )
+    }
+
+    // R8: enforce a server-side size cap on the upload we sign for. The
+    // client declares its file size; anything over the cap is rejected
+    // before a signed URL is minted (the PUT itself goes straight to
+    // Storage, so this declaration is the only server-side lever).
+    const size = body?.size
+    if (size !== undefined && size !== null) {
+      const bytes = typeof size === 'number' ? size : Number(size)
+      const cap = kind === 'video' ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES
+      if (!Number.isFinite(bytes) || bytes <= 0) {
+        return NextResponse.json({ error: 'Invalid size.' }, { status: 400 })
+      }
+      if (bytes > cap) {
+        return NextResponse.json(
+          {
+            error:
+              kind === 'video'
+                ? 'Videos must be 50 MB or smaller.'
+                : 'Images must be 10 MB or smaller.',
+          },
+          { status: 400 }
+        )
+      }
     }
 
     // --- Ensure the public bucket exists (tolerate already-exists) ------------

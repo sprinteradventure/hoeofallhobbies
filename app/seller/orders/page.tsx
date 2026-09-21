@@ -46,7 +46,7 @@ function OrderCard({ order, labelBusy, labelError, onGenerateLabel, onUpdateStat
         </div>
         <div>
           <p className="text-xs text-taupe uppercase tracking-wider">Buyer</p>
-          <p className="text-sm text-charcoal">{buyer?.username || buyer?.full_name || 'Unknown'}</p>
+          <p className="text-sm text-charcoal">{buyer?.username || 'Unknown'}</p>
         </div>
         <div>
           <p className="text-xs text-taupe uppercase tracking-wider">Amount</p>
@@ -145,18 +145,15 @@ function OrderCard({ order, labelBusy, labelError, onGenerateLabel, onUpdateStat
       {order.status !== 'completed' && order.status !== 'refunded' && order.status !== 'cancelled' && (
         <div className="border-t border-blush pt-4">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-taupe">Update Status:</span>
-            <select
-              value={order.status}
-              onChange={(e) => onUpdateStatus(order.id, e.target.value)}
-              className="input w-40 py-2"
-            >
-              <option value="pending">Pending</option>
-              <option value="paid">Paid</option>
-              <option value="shipped">Shipped</option>
-              <option value="delivered">Delivered</option>
-              <option value="completed">Completed</option>
-            </select>
+            {order.status === 'paid' && (
+              <button
+                onClick={() => onUpdateStatus(order.id, 'shipped')}
+                className="btn btn-primary py-2 px-4 text-sm inline-flex items-center gap-2"
+              >
+                <Truck className="h-4 w-4" />
+                Mark as shipped
+              </button>
+            )}
 
             {!order.tracking_number && (
               <>
@@ -263,7 +260,7 @@ export default function SellerOrdersPage() {
 
       const { data, error } = await supabase
         .from('orders')
-        .select('*, buyer:user_profiles!orders_buyer_id_fkey(username, full_name)')
+        .select('*, buyer:user_profiles!orders_buyer_id_fkey(username)')
         .eq('seller_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -275,32 +272,39 @@ export default function SellerOrdersPage() {
   }
 
   async function updateOrderStatus(orderId: string, newStatus: string) {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: newStatus })
-        .eq('id', orderId)
-
-      if (error) throw error
-      setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o))
-    } catch (err) {
-      console.error('Error updating order:', err)
-      alert('Failed to update order status')
-    }
+    // Migration 017: orders are no longer client-writable (service role only,
+    // paid -> 'shipped' via the API). Anything else is rejected server-side.
+    if (newStatus !== 'shipped') return
+    await markShipped(orderId, null)
   }
 
   async function addTracking(orderId: string, trackingNumber: string) {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ tracking_number: trackingNumber, status: 'shipped' })
-        .eq('id', orderId)
+    await markShipped(orderId, trackingNumber)
+  }
 
-      if (error) throw error
-      setOrders(orders.map(o => o.id === orderId ? { ...o, tracking_number: trackingNumber, status: 'shipped' } : o))
+  async function markShipped(orderId: string, trackingNumber: string | null) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Please sign in again.')
+
+      const res = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ status: 'shipped', ...(trackingNumber ? { tracking_number: trackingNumber } : {}) }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'Failed to update order status')
+
+      setOrders(orders.map(o => o.id === orderId
+        ? { ...o, status: 'shipped', ...(trackingNumber ? { tracking_number: trackingNumber } : {}) }
+        : o
+      ))
     } catch (err) {
-      console.error('Error adding tracking:', err)
-      alert('Failed to add tracking')
+      console.error('Error updating order:', err)
+      alert(err instanceof Error ? err.message : 'Failed to update order status')
     }
   }
 

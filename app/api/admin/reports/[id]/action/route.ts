@@ -25,6 +25,56 @@ const ACTIONS = [
 
 type ModerationAction = (typeof ACTIONS)[number]
 
+// R7: every moderation action leaves an audit trail row. audit_logs.action
+// is constrained to INSERT/UPDATE/DELETE (001), so mapping: listing status
+// flips -> UPDATE on products; delete_listing -> DELETE on products;
+// ban/unban -> UPDATE on auth.users; resolve/dismiss -> UPDATE on reports.
+async function logModerationAudit(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  request: NextRequest,
+  adminUser: { id: string; email?: string },
+  action: ModerationAction,
+  context: {
+    reportId: string
+    productId: string | null
+    targetUserId: string | null
+    adminNote: string | null
+  }
+) {
+  const tableName =
+    action === 'delete_listing'
+      ? 'products'
+      : action === 'ban_seller' || action === 'unban_seller'
+        ? 'auth.users'
+        : action === 'resolve' || action === 'dismiss'
+          ? 'reports'
+          : 'products'
+  const dbAction = action === 'delete_listing' ? 'DELETE' : 'UPDATE'
+  const forwarded = request.headers.get('x-forwarded-for')
+  const ip = forwarded ? forwarded.split(',')[0].trim() : null
+
+  try {
+    const { error } = await admin.from('audit_logs').insert({
+      table_name: tableName,
+      action: dbAction,
+      user_id: adminUser.id,
+      changes: {
+        moderation_action: action,
+        report_id: context.reportId,
+        product_id: context.productId,
+        target_user_id: context.targetUserId,
+        admin_note: context.adminNote,
+        admin_email: adminUser.email ?? null,
+      },
+      ip_address: ip,
+    })
+    if (error) console.error('Audit log insert failed:', error)
+  } catch (err) {
+    // Auditing must never break the moderation action itself.
+    console.error('Audit log insert failed:', err)
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -149,6 +199,14 @@ export async function POST(
           .delete()
           .eq('id', productId)
         if (error) throw error
+
+        await logModerationAudit(admin, request, adminUser, action, {
+          reportId: report.id,
+          productId,
+          targetUserId: sellerId,
+          adminNote: adminNote || report.admin_note,
+        })
+
         return NextResponse.json({ report: resolvedReport, action })
       }
       case 'ban_seller': {
@@ -194,6 +252,13 @@ export async function POST(
       .single()
 
     if (updateError) throw updateError
+
+    await logModerationAudit(admin, request, adminUser, action, {
+      reportId: report.id,
+      productId,
+      targetUserId: sellerId ?? report.reported_user_id,
+      adminNote: adminNote || report.admin_note,
+    })
 
     return NextResponse.json({ report: updated, action })
   } catch (error) {

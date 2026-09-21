@@ -26,7 +26,8 @@ type SignedUpload = {
 async function mintSignedUpload(
   kind: 'image' | 'video',
   contentType: string,
-  fileName?: string
+  fileName?: string,
+  size?: number
 ): Promise<SignedUpload> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('Please sign in again to upload media.')
@@ -37,7 +38,14 @@ async function mintSignedUpload(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ kind, contentType, ...(fileName ? { fileName } : {}) }),
+    body: JSON.stringify({
+      kind,
+      contentType,
+      ...(fileName ? { fileName } : {}),
+      // Declared byte size — the server rejects anything over its cap
+      // (10 MB images / 50 MB videos) before minting the signed URL.
+      ...(size !== undefined ? { size } : {}),
+    }),
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok || !data?.path || !data?.token) {
@@ -61,14 +69,14 @@ async function uploadImage(file: File): Promise<string> {
   const processed = await processListingImage(file)
   const baseName = crypto.randomUUID()
 
-  const signed = await mintSignedUpload('image', processed.mainType, `${baseName}.${processed.mainExt}`)
+  const signed = await mintSignedUpload('image', processed.mainType, `${baseName}.${processed.mainExt}`, processed.main.size)
   await putToSignedUrl(signed, processed.main, processed.mainType)
 
   // Thumbnail is best-effort: if it fails, ListingImage's onError fallback
   // serves the main image in card contexts instead.
   if (processed.thumb) {
     try {
-      const thumbSigned = await mintSignedUpload('image', 'image/webp', `${baseName}_thumb.webp`)
+      const thumbSigned = await mintSignedUpload('image', 'image/webp', `${baseName}_thumb.webp`, processed.thumb.size)
       await putToSignedUrl(thumbSigned, processed.thumb, 'image/webp')
     } catch (err) {
       console.warn('[upload] thumbnail upload failed; continuing without it', err)
@@ -91,7 +99,7 @@ export async function uploadToStorage(
     return uploadImage(file)
   }
 
-  const signed = await mintSignedUpload(kind, file.type)
+  const signed = await mintSignedUpload(kind, file.type, undefined, file.size)
 
   if (!onProgress) {
     // Small files: use the storage client helper (handles URL details).

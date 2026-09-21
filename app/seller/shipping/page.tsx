@@ -41,13 +41,16 @@ export default function SellerShippingPage() {
       }
       setAccountEmail(user.email || '')
 
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select(
-          'ship_name, ship_street1, ship_street2, ship_city, ship_state, ship_zip, ship_phone, default_length_in, default_width_in, default_height_in, default_weight_oz'
-        )
-        .eq('id', user.id)
-        .single()
+      // Migration 017 revoked client-side SELECT on ship_* (PII lockdown),
+      // so the settings load through the self-only server route instead.
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
+
+      const res = await fetch('/api/seller/shipping', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (!res.ok) throw new Error('Failed to load shipping settings.')
+      const { settings: profile } = await res.json()
 
       if (profile) {
         setForm({
