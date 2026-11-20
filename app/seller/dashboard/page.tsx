@@ -16,6 +16,9 @@ export default function SellerDashboard() {
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [payoutBannerDismissed, setPayoutBannerDismissed] = useState(false)
   const [shippingBannerDismissed, setShippingBannerDismissed] = useState(false)
+  // Migration 018: 'unknown' until probed, 'missing' = seller has no shop row
+  // yet (show the setup banner), 'exists' = shop already set up.
+  const [shopStatus, setShopStatus] = useState<'unknown' | 'missing' | 'exists'>('unknown')
 
   useEffect(() => {
     loadDashboard()
@@ -73,6 +76,19 @@ export default function SellerDashboard() {
       })
 
       setRecentOrders(orders?.slice(0, 5) || [])
+
+      // Shopfront status (migration 018): probe the shops table; a missing
+      // table (migration not applied yet) reads as 'unknown' so we don't nag.
+      try {
+        const { data: shopRow } = await supabase
+          .from('shops')
+          .select('id')
+          .eq('seller_id', user.id)
+          .maybeSingle()
+        setShopStatus(shopRow ? 'exists' : 'missing')
+      } catch {
+        setShopStatus('unknown')
+      }
     } finally {
       setLoading(false)
     }
@@ -173,6 +189,25 @@ export default function SellerDashboard() {
           </div>
         ) : null
       })()}
+
+      {/* Shopfront setup prompt — shows until the seller claims their shop */}
+      {shopStatus === 'missing' && (
+        <div className="mb-8 card bg-ivory border-gold/40 relative">
+          <div className="flex gap-3">
+            <Store className="h-5 w-5 text-gold flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-bold text-charcoal">Claim your free shopfront</h3>
+              <p className="text-sm text-taupe mb-3">
+                Get your own shareable page at hoeofallhobbies.com/shops/your-name — custom banner,
+                your story, featured items, and a follow button for your buyers. Takes about two minutes.
+              </p>
+              <Link href="/seller/shop" className="btn btn-primary px-5 py-2 text-sm">
+                Set up my shop
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid md:grid-cols-4 gap-6 mb-10">

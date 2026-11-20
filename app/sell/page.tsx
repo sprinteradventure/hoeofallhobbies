@@ -73,7 +73,7 @@ export default function SellPage() {
 
   const toolkit = [
     {
-      icon: Megaphone,
+      icon: Store,
       title: 'Your own storefront',
       body: 'A shareable page at hoeofallhobbies.com/shops/your-name — put it in your Instagram bio, your newsletter, anywhere.',
     },
@@ -248,7 +248,11 @@ export default function SellPage() {
             ))}
           </div>
 
-          <div className="mt-10 text-center">
+          <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href={loggedIn ? '/seller/shop' : '/auth/signup'} className="btn btn-primary px-8 py-3 text-lg font-cormorant tracking-wider">
+              Set up your shopfront
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Link>
             <Link href={loggedIn ? '/seller/marketing' : '/auth/signup'} className="btn btn-secondary px-8 py-3 text-lg font-cormorant tracking-wider">
               Explore the marketing tools
               <ArrowRight className="h-5 w-5 ml-2" />

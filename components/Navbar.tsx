@@ -10,6 +10,7 @@ import { getSiteCategories, getSiteName } from '@/lib/site-context'
 export default function Navbar({ isHolidays }: { isHolidays: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const [categoryOpen, setCategoryOpen] = useState(false)
+  const [sellOpen, setSellOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
@@ -26,6 +27,7 @@ export default function Navbar({ isHolidays }: { isHolidays: boolean }) {
   useEffect(() => {
     setIsOpen(false)
     setCategoryOpen(false)
+    setSellOpen(false)
   }, [pathname])
 
   // ── Close menu when clicking outside ─────────────────────────────────────
@@ -40,6 +42,7 @@ export default function Navbar({ isHolidays }: { isHolidays: boolean }) {
       ) {
         setIsOpen(false)
         setCategoryOpen(false)
+        setSellOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -52,6 +55,7 @@ export default function Navbar({ isHolidays }: { isHolidays: boolean }) {
       if (isOpen) {
         setIsOpen(false)
         setCategoryOpen(false)
+        setSellOpen(false)
       }
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -64,6 +68,7 @@ export default function Navbar({ isHolidays }: { isHolidays: boolean }) {
       if (e.key === 'Escape' && isOpen) {
         setIsOpen(false)
         setCategoryOpen(false)
+        setSellOpen(false)
       }
     }
     document.addEventListener('keydown', handleKeyDown)
@@ -255,9 +260,34 @@ export default function Navbar({ isHolidays }: { isHolidays: boolean }) {
               </div>
             </div>
 
-            <Link href="/sell" className="text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider underline-offset-8 decoration-gold/70 decoration-2 hover:underline">
-              Sell
-            </Link>
+            <div className="relative group">
+              <button className="flex items-center gap-2 text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider underline-offset-8 decoration-gold/70 decoration-2 hover:underline">
+                Sell
+                <ChevronDown className="h-4 w-4" />
+              </button>
+              <div className="absolute left-0 mt-0 w-56 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all py-2 border border-blush">
+                <Link href="/sell" className="block px-4 py-2 text-charcoal hover:bg-ivory transition-colors font-lora">
+                  Why sell here
+                </Link>
+                {isLoggedIn && (
+                  <>
+                    <div className="my-1 border-t border-blush" />
+                    <Link href="/seller/dashboard" className="block px-4 py-2 text-charcoal hover:bg-ivory transition-colors font-lora">
+                      Seller Dashboard
+                    </Link>
+                    <Link href="/seller/shop" className="block px-4 py-2 text-charcoal hover:bg-ivory transition-colors font-lora">
+                      My Shopfront
+                    </Link>
+                    <Link href="/seller/listings/new" className="block px-4 py-2 text-charcoal hover:bg-ivory transition-colors font-lora">
+                      List New Product
+                    </Link>
+                    <Link href="/seller/marketing" className="block px-4 py-2 text-charcoal hover:bg-ivory transition-colors font-lora">
+                      Marketing &amp; Coupons
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
             <Link href="/account" className="text-charcoal hover:text-gold transition-colors font-lora text-sm uppercase tracking-wider underline-offset-8 decoration-gold/70 decoration-2 hover:underline">
               Account
             </Link>
@@ -337,9 +367,36 @@ export default function Navbar({ isHolidays }: { isHolidays: boolean }) {
                 </Link>
               </div>
             )}
-            <Link href="/sell" onClick={closeMenu} className="block py-3 px-2 text-charcoal hover:bg-ivory rounded transition-colors font-lora">
+            <button
+              onClick={() => setSellOpen(!sellOpen)}
+              className="w-full text-left py-3 px-2 text-charcoal hover:bg-ivory rounded transition-colors flex items-center justify-between font-lora"
+            >
               Sell
-            </Link>
+              <ChevronDown className={`h-4 w-4 transition-transform ${sellOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {sellOpen && (
+              <div className="pl-4 space-y-1 animate-fade-in">
+                <Link href="/sell" onClick={closeMenu} className="block py-2 px-2 text-taupe hover:bg-ivory rounded transition-colors text-sm font-lora">
+                  Why sell here
+                </Link>
+                {isLoggedIn && (
+                  <>
+                    <Link href="/seller/dashboard" onClick={closeMenu} className="block py-2 px-2 text-taupe hover:bg-ivory rounded transition-colors text-sm font-lora">
+                      Seller Dashboard
+                    </Link>
+                    <Link href="/seller/shop" onClick={closeMenu} className="block py-2 px-2 text-taupe hover:bg-ivory rounded transition-colors text-sm font-lora">
+                      My Shopfront
+                    </Link>
+                    <Link href="/seller/listings/new" onClick={closeMenu} className="block py-2 px-2 text-taupe hover:bg-ivory rounded transition-colors text-sm font-lora">
+                      List New Product
+                    </Link>
+                    <Link href="/seller/marketing" onClick={closeMenu} className="block py-2 px-2 text-taupe hover:bg-ivory rounded transition-colors text-sm font-lora">
+                      Marketing &amp; Coupons
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
             <Link href="/account" onClick={closeMenu} className="block py-3 px-2 text-charcoal hover:bg-ivory rounded transition-colors font-lora">
               Account
             </Link>
