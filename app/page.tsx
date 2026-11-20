@@ -1,5 +1,8 @@
 import Link from 'next/link'
-import { ArrowRight, ShoppingBag, Sparkles, Shield, Users, Truck, PartyPopper, Globe, Gift } from 'lucide-react'
+import {
+  ArrowRight, ShoppingBag, Sparkles, Shield, Users, Truck,
+  Store, Zap, Sparkle, BadgePercent, Package, Wallet,
+} from 'lucide-react'
 import { getSiteCategories } from '@/lib/site-context-server'
 import { getSiteName, getSiteUrl, getSiteDescription } from '@/lib/site-context-server'
 
@@ -36,59 +39,127 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-ivory via-cream to-blush px-4 py-12 sm:py-16">
-        <div className="mx-auto max-w-5xl text-center">
+      {/* Hero — says what the site is, in plain words, immediately */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-ivory via-cream to-blush px-4 pt-10 pb-14 sm:pt-14 sm:pb-20">
+        <div className="mx-auto max-w-6xl text-center">
+          {/* Brand mark, deliberately smaller — the words below do the explaining */}
           <div className="mb-6 flex justify-center">
-            <div className={`mx-auto ${isHolidays ? 'max-w-md md:max-w-lg' : 'max-w-sm md:max-w-md'}`}>
+            <div className={`${isHolidays ? 'w-36 md:w-44' : 'w-28 md:w-36'}`}>
               <img
                 src={isHolidays ? '/images/holidays-logo.png' : '/images/logo-of-all.png'}
-                alt={`${siteName} — ${siteDescription}`}
+                alt={siteName}
                 className="w-full h-auto object-contain"
               />
             </div>
           </div>
 
-          {/* Thin gold rule beneath the artwork lockup */}
-          <div className="mx-auto mb-6 h-px w-24 bg-gold"></div>
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-charcoal">
+            <Sparkles className="h-3.5 w-3.5 text-gold" />
+            {isHolidays ? 'The marketplace for every celebration' : 'The marketplace for makers & collectors'}
+          </div>
 
-          <p className="text-lg sm:text-xl text-taupe mb-8 max-w-2xl mx-auto leading-relaxed font-lora">
+          <h1 className="mx-auto max-w-4xl font-cormorant text-4xl font-bold leading-tight text-charcoal sm:text-5xl md:text-6xl text-balance">
             {isHolidays
-              ? 'The curated marketplace for holiday decor and celebration supplies. Buy and sell decorations, party essentials, and festive finds for every tradition, culture, and occasion.'
-              : 'The curated marketplace for craft and hobby supplies. Buy and sell rare, vintage, and new finds from passionate creators worldwide.'}
+              ? <>Buy &amp; sell holiday decor, party supplies, and <span className="text-gold">digital templates</span>.</>
+              : <>Buy &amp; sell craft supplies, handmade finds, and <span className="text-gold">digital templates</span>.</>}
+          </h1>
+
+          <p className="mx-auto mt-5 max-w-2xl text-lg sm:text-xl leading-relaxed text-taupe font-lora">
+            {isHolidays
+              ? 'A curated marketplace built for sellers: your own free storefront, live shipping rates, instant-download listings — and you keep 98% of every sale.'
+              : 'A curated marketplace built for sellers: your own free storefront, live shipping rates, instant-download listings — and you keep 98% of every sale.'}
           </p>
 
-          <div className="mx-auto flex max-w-md flex-col gap-4 sm:max-w-none sm:flex-row sm:justify-center">
-            <Link href="/shop/products" className="btn btn-primary w-full sm:w-auto px-10 py-4 text-lg font-cormorant tracking-wider">
+          {/* Three unambiguous actions */}
+          <div className="mx-auto mt-9 flex max-w-2xl flex-col gap-4 sm:flex-row sm:justify-center">
+            <Link href="/shop/products" className="btn btn-primary flex-1 px-8 py-4 text-lg font-cormorant tracking-wider sm:flex-none">
               <ShoppingBag className="h-5 w-5 mr-2" />
-              Browse Shop
+              Shop the marketplace
             </Link>
-            <Link href="/sell" className="btn btn-secondary w-full sm:w-auto px-10 py-4 text-lg font-cormorant tracking-wider">
-              <Sparkles className="h-5 w-5 mr-2" />
-              Start Selling
+            <Link href="/sell" className="btn flex-1 items-center justify-center px-8 py-4 text-lg font-cormorant tracking-wider bg-gold text-white hover:bg-opacity-90 sm:flex-none inline-flex">
+              <Store className="h-5 w-5 mr-2" />
+              Open your free shop
+            </Link>
+            <Link href="/sell" className="btn btn-secondary flex-1 px-8 py-4 text-lg font-cormorant tracking-wider sm:flex-none">
+              <Zap className="h-5 w-5 mr-2" />
+              Sell digital templates
             </Link>
           </div>
 
-          <div className="mt-10 flex flex-wrap justify-center gap-8 text-taupe text-sm font-lora">
-            {isHolidays ? (
-              <>
-                <span className="flex items-center gap-2"><Globe className="h-4 w-4 text-gold" /> Cultural & Inclusive</span>
-                <span className="flex items-center gap-2"><PartyPopper className="h-4 w-4 text-gold" /> Every Celebration</span>
-                <span className="flex items-center gap-2"><Gift className="h-4 w-4 text-gold" /> Handmade & Vintage</span>
-              </>
-            ) : (
-              <>
-                <span className="flex items-center gap-2"><Shield className="h-4 w-4 text-gold" /> Secure Payments</span>
-                <span className="flex items-center gap-2"><Users className="h-4 w-4 text-gold" /> Community Driven</span>
-                <span className="flex items-center gap-2"><Truck className="h-4 w-4 text-gold" /> Easy Shipping</span>
-              </>
-            )}
+          {/* The five things that make us different — stated, not implied */}
+          <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {[
+              { icon: BadgePercent, label: 'You keep 98%', href: '/sell' },
+              { icon: Wallet, label: 'No listing fees', href: '/sell' },
+              { icon: Store, label: 'Free storefront', href: '/seller/shop' },
+              { icon: Zap, label: 'Instant digital delivery', href: '/sell' },
+              { icon: Sparkle, label: 'AI-free browsing, your choice', href: '/shop/products' },
+            ].map((chip) => (
+              <Link
+                key={chip.label}
+                href={chip.href}
+                className="flex items-center gap-2 rounded-xl border border-blush bg-white/80 px-3 py-2.5 text-xs font-semibold text-charcoal transition-all hover:border-gold hover:shadow-sm"
+              >
+                <chip.icon className="h-4 w-4 shrink-0 text-gold" />
+                {chip.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Sell your way — physical or digital, spelled out */}
+      <section className="bg-white py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl sm:text-5xl font-bold text-charcoal mb-3 font-cormorant tracking-wide">
+              Sell it your way
+            </h2>
+            <p className="text-taupe font-lora max-w-xl mx-auto">
+              Whether you ship boxes or upload files, your shop handles both — in one place, on one dashboard.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Physical */}
+            <div className="card hover:-translate-y-1">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/10">
+                <Package className="h-6 w-6 text-gold" />
+              </div>
+              <h3 className="font-cormorant text-2xl font-bold text-charcoal mb-2">Physical items</h3>
+              <p className="text-sm text-taupe font-lora leading-relaxed mb-4">
+                List supplies, vintage finds, and handmade goods. Buyers see real carrier rates at
+                checkout, labels generate automatically, and tracking syncs to the order.
+              </p>
+              <ul className="space-y-2 text-sm text-charcoal font-lora">
+                <li className="flex items-start gap-2"><Truck className="h-4 w-4 mt-0.5 shrink-0 text-gold" /> Live UPS, USPS &amp; FedEx rates</li>
+                <li className="flex items-start gap-2"><Shield className="h-4 w-4 mt-0.5 shrink-0 text-gold" /> One-click printable shipping labels</li>
+                <li className="flex items-start gap-2"><Users className="h-4 w-4 mt-0.5 shrink-0 text-gold" /> Direct buyer messaging</li>
+              </ul>
+            </div>
+
+            {/* Digital */}
+            <div className="card hover:-translate-y-1">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/10">
+                <Zap className="h-6 w-6 text-gold" />
+              </div>
+              <h3 className="font-cormorant text-2xl font-bold text-charcoal mb-2">Digital templates</h3>
+              <p className="text-sm text-taupe font-lora leading-relaxed mb-4">
+                Upload a PDF, ZIP, or image template once and sell it forever. Buyers download
+                instantly after paying — no shipping, no fulfillment, delivered automatically.
+              </p>
+              <ul className="space-y-2 text-sm text-charcoal font-lora">
+                <li className="flex items-start gap-2"><Zap className="h-4 w-4 mt-0.5 shrink-0 text-gold" /> Instant delivery, orders auto-complete</li>
+                <li className="flex items-start gap-2"><Shield className="h-4 w-4 mt-0.5 shrink-0 text-gold" /> Files stored privately — buyers only, verified</li>
+                <li className="flex items-start gap-2"><Sparkle className="h-4 w-4 mt-0.5 shrink-0 text-gold" /> AI-content labels keep listings transparent</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Category Explorer */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-ivory">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-4xl sm:text-5xl font-bold text-charcoal mb-3 font-cormorant tracking-wide">
@@ -106,7 +177,7 @@ export default async function Home() {
               <Link
                 key={cat.slug}
                 href={`/shop/products?category=${encodeURIComponent(cat.name)}`}
-                className="group relative bg-ivory rounded-xl p-5 border border-blush hover:border-gold hover:shadow-md transition-all duration-300 text-center"
+                className="group relative bg-white rounded-xl p-5 border border-blush hover:border-gold hover:shadow-md transition-all duration-300 text-center"
               >
                 <h3 className="font-cormorant text-base font-bold text-charcoal group-hover:text-gold transition-colors leading-tight">
                   {cat.name}
@@ -125,7 +196,7 @@ export default async function Home() {
             <h2 className="text-4xl sm:text-5xl font-bold text-charcoal mb-3 font-cormorant tracking-wide">
               How It Works
             </h2>
-            <p className="text-taupe font-lora">Simple, sustainable, and community-first</p>
+            <p className="text-taupe font-lora">From listing to payday in three steps</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -133,40 +204,40 @@ export default async function Home() {
               ? [
                   {
                     step: '1',
-                    title: 'List Your Decor',
-                    description: `Upload photos, set your price, and choose from ${categories.length}+ categories. No listing fees.`,
+                    title: 'Open your free shop',
+                    description: `Claim your storefront, upload photos, set your price, and choose from ${categories.length}+ categories. No listing fees, ever.`,
                     icon: '✨'
                   },
                   {
                     step: '2',
-                    title: 'Connect & Sell',
-                    description: 'Buyers discover your items through smart search and category browsing for every celebration.',
+                    title: 'Buyers find you',
+                    description: 'Smart search, category browsing, Pinterest-ready pins, and coupon codes you can share with your followers.',
                     icon: '🤝'
                   },
                   {
                     step: '3',
                     title: 'Keep 98%',
-                    description: 'We only take 2% to keep the marketplace running. You keep the rest.',
+                    description: 'We only take 2% when you actually sell. Payouts go straight to your bank via Stripe.',
                     icon: '💰'
                   }
                 ]
               : [
                   {
                     step: '1',
-                    title: 'List Your Supplies',
-                    description: `Upload photos, set your price, and choose from ${categories.length}+ categories. No listing fees.`,
+                    title: 'Open your free shop',
+                    description: `Claim your storefront, upload photos, set your price, and choose from ${categories.length}+ categories. No listing fees, ever.`,
                     icon: '✨'
                   },
                   {
                     step: '2',
-                    title: 'Connect & Sell',
-                    description: 'Buyers discover your items through smart search and category browsing.',
+                    title: 'Buyers find you',
+                    description: 'Smart search, category browsing, Pinterest-ready pins, and coupon codes you can share with your followers.',
                     icon: '🤝'
                   },
                   {
                     step: '3',
                     title: 'Keep 98%',
-                    description: 'We only take 2% to keep the marketplace running. You keep the rest.',
+                    description: 'We only take 2% when you actually sell. Payouts go straight to your bank via Stripe.',
                     icon: '💰'
                   }
                 ]
@@ -198,25 +269,25 @@ export default async function Home() {
               </h2>
               <p className="text-cream/80 font-lora leading-relaxed mb-8">
                 {isHolidays
-                  ? 'Open a storefront for your decor and celebration creations. No listing fees, a flat 2% only when you sell, and built-in tools to bring your followers with you.'
-                  : 'Open a storefront for your craft and hobby finds. No listing fees, a flat 2% only when you sell, and built-in tools to bring your followers with you.'}
+                  ? 'Open a storefront for your decor and celebration creations — physical or digital. No listing fees, a flat 2% only when you sell, and built-in tools to bring your followers with you.'
+                  : 'Open a storefront for your craft and hobby finds — physical or digital. No listing fees, a flat 2% only when you sell, and built-in tools to bring your followers with you.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/sell" className="btn px-8 py-3.5 text-lg font-cormorant tracking-wider bg-gold text-white border border-gold hover:bg-opacity-90 hover:-translate-y-0.5 inline-flex items-center justify-center">
                   Open your shop
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Link>
-                <Link href="/seller/marketing" className="btn px-8 py-3.5 text-lg font-cormorant tracking-wider border border-cream/40 text-cream hover:bg-cream/10 inline-flex items-center justify-center">
-                  See the marketing tools
+                <Link href="/seller/shop" className="btn px-8 py-3.5 text-lg font-cormorant tracking-wider border border-cream/40 text-cream hover:bg-cream/10 inline-flex items-center justify-center">
+                  See a shopfront
                 </Link>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
                 { title: 'Your own storefront', desc: 'A shareable page at /shops/your-name — banner, story, announcement bar, social links.' },
+                { title: 'Digital templates', desc: 'Upload once, sell forever. Instant delivery with verified, private file downloads.' },
                 { title: 'Coupon codes', desc: 'Issue discount codes for your shop and share them with your audience.' },
                 { title: 'Pinterest-ready pins', desc: 'Every listing gets a branded 2:3 pin image, generated automatically.' },
-                { title: 'Keep 98%', desc: 'One flat 2% when you sell. No listing fees, no offsite-ad commissions.' },
               ].map((item) => (
                 <div key={item.title} className="rounded-2xl border border-cream/15 bg-cream/5 p-5 hover:bg-cream/10 transition-colors">
                   <h3 className="font-cormorant text-lg font-bold mb-1.5">{item.title}</h3>
@@ -280,11 +351,11 @@ export default async function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/shop/products" className="btn btn-primary px-8 py-3 text-lg font-cormorant tracking-wider">
-              Explore Shop
+              Shop the marketplace
               <ArrowRight className="h-5 w-5 ml-2" />
             </Link>
             <Link href="/sell" className="btn btn-secondary px-8 py-3 text-lg font-cormorant tracking-wider">
-              Become a Seller
+              Open your free shop
             </Link>
           </div>
         </div>
