@@ -135,7 +135,7 @@ export default function AdminDashboard() {
           <p className="text-2xl font-bold">${formatMoney(stats.grossSales)}</p>
         </div>
         <div className="card">
-          <p className="text-neutral-600 text-sm">Your Commission (5%)</p>
+          <p className="text-neutral-600 text-sm">Your Commission (2%)</p>
           <p className="text-2xl font-bold">${formatMoney(stats.platformFees)}</p>
         </div>
         <div className="card">

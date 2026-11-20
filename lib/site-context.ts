@@ -75,7 +75,7 @@ export function getHomeFeatures(siteType?: SiteType): { title: string; desc: str
       { title: 'Cultural & Inclusive', desc: 'Find decor and supplies for holidays from every culture, religion, and tradition — all in one place.' },
       { title: 'Seasonal Finds', desc: 'Discover rare, vintage, and handmade decorations you won\'t find in big-box stores.' },
       { title: 'Community Driven', desc: 'Connect with fellow hosts, DIY decorators, and party planners worldwide.' },
-      { title: 'Fair Pricing', desc: 'Transparent pricing: sellers keep 95%, we take only 5% to keep the marketplace running.' },
+      { title: 'Fair Pricing', desc: 'Transparent pricing: sellers keep 98%, we take only 2% to keep the marketplace running.' },
       { title: 'Secure Transactions', desc: 'Stripe-powered payments with buyer and seller protection for peace of mind.' },
       { title: 'Easy Shipping', desc: 'Integrated shipping labels and tracking. Just add your carrier info when ready.' }
     ]
@@ -84,7 +84,7 @@ export function getHomeFeatures(siteType?: SiteType): { title: string; desc: str
     { title: 'Sustainable', desc: 'Give vintage and second-hand supplies a new home. Reduce waste, support circular crafting.' },
     { title: 'Quality Finds', desc: 'Discover rare, vintage, and hard-to-find supplies you won\'t find anywhere else.' },
     { title: 'Community Driven', desc: 'Connect with fellow crafters and hobbyists. Support creative makers worldwide.' },
-    { title: 'Fair Pricing', desc: 'Transparent pricing: sellers keep 95%, we take only 5% to keep the marketplace running.' },
+    { title: 'Fair Pricing', desc: 'Transparent pricing: sellers keep 98%, we take only 2% to keep the marketplace running.' },
     { title: 'Secure Transactions', desc: 'Stripe-powered payments with buyer and seller protection for peace of mind.' },
     { title: 'Easy Shipping', desc: 'Integrated shipping labels and tracking. Just add your carrier info when ready.' }
   ]
@@ -108,8 +108,8 @@ export function getHomeHowItWorks(siteType?: SiteType): { step: string; title: s
       },
       {
         step: '3',
-        title: 'Keep 95%',
-        description: 'We only take 5% to keep the marketplace running. You keep the rest.',
+        title: 'Keep 98%',
+        description: 'We only take 2% to keep the marketplace running. You keep the rest.',
         icon: '💰'
       }
     ]
@@ -129,8 +129,8 @@ export function getHomeHowItWorks(siteType?: SiteType): { step: string; title: s
     },
     {
       step: '3',
-      title: 'Keep 95%',
-      description: 'We only take 5% to keep the marketplace running. You keep the rest.',
+      title: 'Keep 98%',
+      description: 'We only take 2% to keep the marketplace running. You keep the rest.',
       icon: '💰'
     }
   ]

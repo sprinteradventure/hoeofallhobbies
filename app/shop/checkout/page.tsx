@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { CartItem } from '@/lib/types'
 import ListingImage from '@/components/shop/ListingImage'
-import { Truck, CreditCard, MapPin, Package, ChevronRight, Shield, Store, AlertCircle, RefreshCw } from 'lucide-react'
+import { Truck, CreditCard, MapPin, Package, ChevronRight, Shield, Store, AlertCircle, RefreshCw, Zap } from 'lucide-react'
 
 type SellerInfo = {
   username?: string | null
@@ -54,6 +54,60 @@ export default function CheckoutPage() {
   const [groupErrors, setGroupErrors] = useState<Record<string, string>>({})
   const [groupRates, setGroupRates] = useState<Record<string, GroupRates>>({})
 
+  // Digital (instant-download) product ids in the cart. Probed separately —
+  // NOT via the cart join's product select — so a pre-migration database
+  // (product_type column not added yet) degrades to "all physical" instead of
+  // breaking the cart.
+  const [digitalIds, setDigitalIds] = useState<Set<string>>(new Set())
+
+  // Seller coupon codes, keyed by seller group. percentOff comes from the
+  // server-side validation endpoint; the checkout API re-validates with the
+  // service role before charging, so a stale client state can't force a
+  // discount.
+  const [groupCoupons, setGroupCoupons] = useState<
+    Record<string, { code: string; percentOff: number | null; status: 'idle' | 'checking' | 'applied' | 'error'; message: string }>
+  >({})
+
+  function couponState(sellerId: string) {
+    return groupCoupons[sellerId] || { code: '', percentOff: null, status: 'idle' as const, message: '' }
+  }
+
+  function setCouponField(sellerId: string, patch: Partial<ReturnType<typeof couponState>>) {
+    setGroupCoupons((prev) => ({
+      ...prev,
+      [sellerId]: { code: '', percentOff: null, status: 'idle' as const, message: '', ...prev[sellerId], ...patch },
+    }))
+  }
+
+  async function applyCoupon(sellerId: string) {
+    const c = couponState(sellerId)
+    const code = c.code.trim().toUpperCase()
+    if (!code) return
+    setCouponField(sellerId, { status: 'checking', message: '' })
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seller_id: sellerId, code }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (data?.valid) {
+        setCouponField(sellerId, { code, percentOff: data.percent_off, status: 'applied', message: '' })
+      } else {
+        setCouponField(sellerId, { status: 'error', message: data?.message || 'That code isn\'t valid.' })
+      }
+    } catch {
+      setCouponField(sellerId, { status: 'error', message: 'Could not check that code. Try again.' })
+    }
+  }
+
+  // Discounted items subtotal for a group (0 when no applied coupon).
+  function groupDiscount(group: SellerGroup): number {
+    const c = couponState(group.sellerId)
+    if (c.status !== 'applied' || c.percentOff == null) return 0
+    return Math.round(group.subtotal * c.percentOff) / 100
+  }
+
   useEffect(() => {
     fetchCart()
   }, [])
@@ -73,6 +127,31 @@ export default function CheckoutPage() {
 
       const items = data || []
       setCartItems(items)
+
+      // Probe which cart products are digital templates (separate query so a
+      // missing product_type column pre-migration doesn't break the cart).
+      try {
+        const productIds = Array.from(
+          new Set(items.map((item: any) => item.product_id).filter(Boolean))
+        ) as string[]
+        if (productIds.length > 0) {
+          const { data: typeRows } = await supabase
+            .from('products')
+            .select('id, product_type')
+            .in('id', productIds)
+          if (typeRows) {
+            setDigitalIds(
+              new Set(
+                (typeRows as any[])
+                  .filter((r) => r.product_type === 'digital')
+                  .map((r) => r.id)
+              )
+            )
+          }
+        }
+      } catch {
+        // Column missing — everything is physical.
+      }
 
       // Load each seller's public profile (shop name + payout status) so
       // multi-seller carts can be grouped per shop and unavailable groups
@@ -115,17 +194,30 @@ export default function CheckoutPage() {
     new Set(cartItems.map((item: any) => item.product?.seller_id).filter(Boolean))
   ) as string[]
 
+  // A seller group is "digital" when EVERY item in it is an instant-download
+  // template — those groups skip shipping entirely.
+  function sellerGroupIsDigital(sellerId: string): boolean {
+    const items = cartItems.filter((item: any) => item.product?.seller_id === sellerId)
+    return items.length > 0 && items.every((item: any) => digitalIds.has(item.product_id))
+  }
+
   useEffect(() => {
     if (!addressComplete || cartSellerIds.length === 0) {
       setGroupRates({})
       return
     }
+    // Digital-only groups never need carrier rates.
+    const shippableSellerIds = cartSellerIds.filter((id) => !sellerGroupIsDigital(id))
+    if (shippableSellerIds.length === 0) {
+      setGroupRates({})
+      return
+    }
     const timer = setTimeout(() => {
-      fetchAllRates(cartSellerIds)
+      fetchAllRates(shippableSellerIds)
     }, 600)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fullName, street1, street2, city, state, zip, cartItems])
+  }, [fullName, street1, street2, city, state, zip, cartItems, digitalIds])
 
   async function fetchAllRates(sellerIds: string[]) {
     const { data: { session } } = await supabase.auth.getSession()
@@ -203,6 +295,8 @@ export default function CheckoutPage() {
   }
 
   function groupReadyToCheckout(sellerId: string): boolean {
+    // Digital-only groups need no address and no shipping rate.
+    if (sellerGroupIsDigital(sellerId)) return true
     return addressComplete && selectedRate(sellerId) !== null
   }
 
@@ -221,15 +315,21 @@ export default function CheckoutPage() {
       // Attach the buyer-selected Shippo rate. The server re-fetches the rate
       // from Shippo and charges ITS amount — the quoted price shown here is
       // never trusted. sellerId always identifies the group (single-seller
-      // carts pass it too, which the server accepts).
-      const shippingSelection = sellerId
-        ? (() => {
-            const g = groupRates[sellerId]
-            const rate = selectedRate(sellerId)
-            if (!g?.shipmentId || !rate) return null
-            return { shipmentId: g.shipmentId, rateId: rate.rateId, address: buyerAddress }
-          })()
-        : null
+      // carts pass it too, which the server accepts). Digital-only groups
+      // ship nothing, so no selection is attached.
+      const shippingSelection =
+        sellerId && !sellerGroupIsDigital(sellerId)
+          ? (() => {
+              const g = groupRates[sellerId]
+              const rate = selectedRate(sellerId)
+              if (!g?.shipmentId || !rate) return null
+              return { shipmentId: g.shipmentId, rateId: rate.rateId, address: buyerAddress }
+            })()
+          : null
+
+      const appliedCoupon = sellerId ? couponState(sellerId) : null
+      const couponCodeToSend =
+        appliedCoupon?.status === 'applied' && appliedCoupon.code ? appliedCoupon.code : undefined
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -240,10 +340,19 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           seller_id: sellerId ?? null,
           ...(shippingSelection ? { shipping: shippingSelection } : {}),
+          ...(couponCodeToSend ? { coupon_code: couponCodeToSend } : {}),
         }),
       })
 
       const data = await res.json().catch(() => ({}))
+
+      if (res.status === 400 && data?.code === 'COUPON_INVALID' && sellerId) {
+        // The code passed client-side validation but failed the server's
+        // re-check (paused/expired/redeemed between page load and checkout).
+        setCouponField(sellerId, { status: 'error', message: data.error })
+        setGroupErrors((prev) => ({ ...prev, [sellerId]: data.error }))
+        return
+      }
 
       if (res.status === 501 && data?.code === 'STRIPE_NOT_CONFIGURED') {
         setCheckoutError(
@@ -291,7 +400,8 @@ export default function CheckoutPage() {
   }
 
   function handleGroupCheckout(sellerId: string) {
-    if (!formRef.current?.reportValidity()) return
+    // Digital-only groups don't need the (possibly hidden) address form.
+    if (!sellerGroupIsDigital(sellerId) && !formRef.current?.reportValidity()) return
     handleCheckout(sellerId)
   }
 
@@ -314,6 +424,9 @@ export default function CheckoutPage() {
     subtotal: items.reduce((sum, item) => sum + ((item.product as any)?.price || 0) * item.quantity, 0),
   }))
   const isMultiSeller = sellerGroups.length > 1
+  // When nothing in the cart ships, the whole address form is unnecessary.
+  const allGroupsDigital =
+    sellerGroups.length > 0 && sellerGroups.every((g) => sellerGroupIsDigital(g.sellerId))
 
   const selectedShippingTotal = sellerGroups.reduce(
     (sum, group) => sum + (selectedRate(group.sellerId)?.amount || 0),
@@ -330,7 +443,7 @@ export default function CheckoutPage() {
   }
 
   function groupTotal(group: SellerGroup): number {
-    return group.subtotal + (selectedRate(group.sellerId)?.amount || 0)
+    return group.subtotal - groupDiscount(group) + (selectedRate(group.sellerId)?.amount || 0)
   }
 
   function renderRates(sellerId: string) {
@@ -411,7 +524,8 @@ export default function CheckoutPage() {
         {/* Checkout Form */}
         <div className="lg:col-span-3 space-y-6">
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-            {/* Shipping Address */}
+            {/* Shipping Address (not needed when everything is a digital download) */}
+            {!allGroupsDigital && (
             <div className="card">
               <div className="flex items-center gap-2 mb-5">
                 <MapPin className="h-5 w-5 text-gold" />
@@ -471,6 +585,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Payment + per-seller shipping selection */}
             <div className="card">
@@ -503,6 +618,7 @@ export default function CheckoutPage() {
                     {sellerGroups.map((group) => {
                       const ready = sellerPayoutsReady(group.sellerId)
                       const groupError = groupErrors[group.sellerId]
+                      const groupIsDigital = sellerGroupIsDigital(group.sellerId)
                       return (
                         <div key={group.sellerId} className="rounded-xl border border-blush bg-white p-4">
                           <div className="flex items-center justify-between mb-3">
@@ -519,12 +635,68 @@ export default function CheckoutPage() {
                               <p className="font-bold text-charcoal">${groupTotal(group).toFixed(2)}</p>
                               {selectedRate(group.sellerId) && (
                                 <p className="text-xs text-taupe">
-                                  ${group.subtotal.toFixed(2)} + ${selectedRate(group.sellerId)!.amount.toFixed(2)} shipping
+                                  ${(group.subtotal - groupDiscount(group)).toFixed(2)} + ${selectedRate(group.sellerId)!.amount.toFixed(2)} shipping
                                 </p>
                               )}
                             </div>
                           </div>
 
+                          {/* Seller coupon */}
+                          <div className="mb-3">
+                            {(() => {
+                              const c = couponState(group.sellerId)
+                              if (c.status === 'applied') {
+                                return (
+                                  <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 px-3 py-2">
+                                    <p className="text-xs text-green-800 font-lora">
+                                      Code <span className="font-mono font-bold">{c.code}</span> applied — {c.percentOff}% off
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => setCouponField(group.sellerId, { code: '', percentOff: null, status: 'idle' })}
+                                      className="text-xs text-green-700 hover:underline"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                )
+                              }
+                              return (
+                                <div>
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      value={c.code}
+                                      placeholder="Discount code (optional)"
+                                      onChange={(e) => setCouponField(group.sellerId, { code: e.target.value.toUpperCase(), status: 'idle', message: '' })}
+                                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(group.sellerId) } }}
+                                      className="input flex-1 !py-2 font-mono uppercase text-sm"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => applyCoupon(group.sellerId)}
+                                      disabled={c.status === 'checking' || !c.code.trim()}
+                                      className="btn btn-secondary px-4 py-2 text-sm disabled:opacity-50"
+                                    >
+                                      {c.status === 'checking' ? 'Checking…' : 'Apply'}
+                                    </button>
+                                  </div>
+                                  {c.status === 'error' && c.message && (
+                                    <p className="text-xs text-red-600 mt-1.5">{c.message}</p>
+                                  )}
+                                </div>
+                              )
+                            })()}
+                          </div>
+
+                          {groupIsDigital ? (
+                            <div className="mb-3 flex items-center gap-2 rounded-lg bg-gold/5 border border-gold/30 p-3">
+                              <Zap className="h-4 w-4 text-gold flex-shrink-0" />
+                              <p className="text-xs text-charcoal">
+                                Instant download — your files are ready the moment payment succeeds. No shipping needed.
+                              </p>
+                            </div>
+                          ) : (
                           <div className="mb-3">
                             <div className="flex items-center gap-2 mb-2">
                               <Truck className="h-4 w-4 text-gold" />
@@ -534,6 +706,7 @@ export default function CheckoutPage() {
                             </div>
                             {renderRates(group.sellerId)}
                           </div>
+                          )}
 
                           {ready ? (
                             <button
@@ -545,7 +718,7 @@ export default function CheckoutPage() {
                               {processing && processingSeller === group.sellerId
                                 ? 'Redirecting to Payment...'
                                 : groupReadyToCheckout(group.sellerId)
-                                  ? `Checkout with this seller — $${groupTotal(group).toFixed(2)}`
+                                  ? `Checkout with this seller — $${groupTotal(group).toFixed(2)}${groupIsDigital ? ' (instant download)' : ''}`
                                   : 'Choose a shipping option above'}
                             </button>
                           ) : (
@@ -583,13 +756,70 @@ export default function CheckoutPage() {
                       <>
                         {sellerGroups.length === 1 && (
                           <div className="mb-4">
+                            {/* Seller coupon (single-seller flow) */}
+                            {(() => {
+                              const singleId = sellerGroups[0].sellerId
+                              const c = couponState(singleId)
+                              if (c.status === 'applied') {
+                                return (
+                                  <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 px-3 py-2 mb-4">
+                                    <p className="text-xs text-green-800 font-lora">
+                                      Code <span className="font-mono font-bold">{c.code}</span> applied — {c.percentOff}% off
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => setCouponField(singleId, { code: '', percentOff: null, status: 'idle' })}
+                                      className="text-xs text-green-700 hover:underline"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                )
+                              }
+                              return (
+                                <div className="mb-4">
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      value={c.code}
+                                      placeholder="Discount code (optional)"
+                                      onChange={(e) => setCouponField(singleId, { code: e.target.value.toUpperCase(), status: 'idle', message: '' })}
+                                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(singleId) } }}
+                                      className="input flex-1 !py-2 font-mono uppercase text-sm"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => applyCoupon(singleId)}
+                                      disabled={c.status === 'checking' || !c.code.trim()}
+                                      className="btn btn-secondary px-4 py-2 text-sm disabled:opacity-50"
+                                    >
+                                      {c.status === 'checking' ? 'Checking…' : 'Apply'}
+                                    </button>
+                                  </div>
+                                  {c.status === 'error' && c.message && (
+                                    <p className="text-xs text-red-600 mt-1.5">{c.message}</p>
+                                  )}
+                                </div>
+                              )
+                            })()}
+                            {!sellerGroupIsDigital(sellerGroups[0].sellerId) && (
                             <div className="flex items-center gap-2 mb-2">
                               <Truck className="h-4 w-4 text-gold" />
                               <p className="text-xs font-semibold text-taupe uppercase tracking-wide">
                                 Shipping Options
                               </p>
                             </div>
-                            {renderRates(sellerGroups[0].sellerId)}
+                            )}
+                            {!sellerGroupIsDigital(sellerGroups[0].sellerId) ? (
+                              renderRates(sellerGroups[0].sellerId)
+                            ) : (
+                              <div className="flex items-center gap-2 rounded-lg bg-gold/5 border border-gold/30 p-3">
+                                <Zap className="h-4 w-4 text-gold flex-shrink-0" />
+                                <p className="text-xs text-charcoal">
+                                  Instant download — your files are ready the moment payment succeeds. No shipping needed.
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )}
                         <button
@@ -673,9 +903,23 @@ export default function CheckoutPage() {
                 <span className="text-taupe">Subtotal</span>
                 <span className="text-charcoal">${total.toFixed(2)}</span>
               </div>
+              {sellerGroups.some((g) => groupDiscount(g) > 0) && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-taupe">
+                    Discount{couponState(sellerGroups.find((g) => groupDiscount(g) > 0)!.sellerId).code
+                      ? ` (${couponState(sellerGroups.find((g) => groupDiscount(g) > 0)!.sellerId).code})`
+                      : ''}
+                  </span>
+                  <span className="text-green-700">
+                    −${sellerGroups.reduce((sum, g) => sum + groupDiscount(g), 0).toFixed(2)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-taupe">Shipping</span>
-                {selectedShippingTotal > 0 ? (
+                {allGroupsDigital ? (
+                  <span className="text-green-700">Free — instant download</span>
+                ) : selectedShippingTotal > 0 ? (
                   <span className="text-charcoal">${selectedShippingTotal.toFixed(2)}</span>
                 ) : (
                   <span className="text-taupe italic">Select options above</span>
@@ -688,7 +932,9 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between text-xl font-bold pt-4 border-t border-blush">
               <span className="text-charcoal">Total</span>
-              <span className="text-charcoal">${grandTotal.toFixed(2)}</span>
+              <span className="text-charcoal">
+                ${(grandTotal - sellerGroups.reduce((sum, g) => sum + groupDiscount(g), 0)).toFixed(2)}
+              </span>
             </div>
             {isMultiSeller && (
               <p className="text-xs text-taupe mt-3">

@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { CATEGORIES, getSubcategoriesForCategory, isCollectiblesCategory, COLLECTIBLES_CATEGORY_NAME } from '@/lib/categories'
-import { Wallet, AlertTriangle, ExternalLink, Plus, Sparkles } from 'lucide-react'
+import { uploadDigitalFile } from '@/lib/uploadMedia'
+import { Wallet, AlertTriangle, ExternalLink, Plus, Sparkles, FileDown, FileText } from 'lucide-react'
 
 const CONDITIONS = ['new', 'like-new', 'used', 'damaged']
 
@@ -44,7 +45,15 @@ export default function EditListingPage() {
     quantity: '1',
     tags: '',
     is_active: true,
+    ai_generated: false,
   })
+
+  // ── Digital template state ────────────────────────────────────────────────
+  const [productType, setProductType] = useState<'physical' | 'digital'>('physical')
+  const [digitalFilePath, setDigitalFilePath] = useState<string | null>(null)
+  const [digitalFileName, setDigitalFileName] = useState('')
+  const [uploadingDigital, setUploadingDigital] = useState(false)
+  const [digitalProgress, setDigitalProgress] = useState(0)
 
   // Load product + check payout status
   useEffect(() => {
@@ -131,7 +140,13 @@ export default function EditListingPage() {
         quantity: data.quantity.toString(),
         tags: (data.tags || []).join(', '),
         is_active: data.is_active,
+        ai_generated: data.ai_generated === true,
       })
+      setProductType(data.product_type === 'digital' ? 'digital' : 'physical')
+      if (data.digital_file_path) {
+        setDigitalFilePath(data.digital_file_path)
+        setDigitalFileName(data.digital_file_path.split('/').pop() || 'template file')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load product')
       router.push('/seller/listings')
@@ -168,6 +183,28 @@ export default function EditListingPage() {
   const baseSubs = getSubcategoriesForCategory(formData.category)
   const allSubs = isCollectibles ? [...new Set([...baseSubs, ...customSubcategories])] : baseSubs
 
+  async function handleDigitalFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.size > 50 * 1024 * 1024) {
+      setError('Files must be 50 MB or smaller.')
+      return
+    }
+    setUploadingDigital(true)
+    setDigitalProgress(0)
+    setError('')
+    try {
+      const path = await uploadDigitalFile(file, setDigitalProgress)
+      setDigitalFilePath(path)
+      setDigitalFileName(file.name)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'File upload failed. Please try again.')
+    } finally {
+      setUploadingDigital(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -179,6 +216,10 @@ export default function EditListingPage() {
           'You must complete your payout setup before reactivating this listing. ' +
           'Go to Seller Console → Payouts to connect your bank account.'
         )
+      }
+
+      if (productType === 'digital' && !digitalFilePath) {
+        throw new Error('Please upload the template file buyers will download.')
       }
 
       const { data: { session } } = await supabase.auth.getSession()
@@ -202,6 +243,9 @@ export default function EditListingPage() {
           quantity: parseInt(formData.quantity),
           tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
           is_active: formData.is_active,
+          product_type: productType,
+          digital_file_path: productType === 'digital' ? digitalFilePath : null,
+          ai_generated: formData.ai_generated,
         }),
       })
 
@@ -298,6 +342,26 @@ export default function EditListingPage() {
               className="input w-full resize-none"
               required
             />
+          </div>
+
+          {/* AI disclosure — required by the Terms of Service */}
+          <div className="flex items-start gap-3 rounded-xl border border-blush bg-ivory/50 p-4">
+            <input
+              id="ai_generated"
+              type="checkbox"
+              name="ai_generated"
+              checked={formData.ai_generated}
+              onChange={handleChange}
+              className="h-4 w-4 mt-0.5 rounded accent-gold"
+            />
+            <label htmlFor="ai_generated" className="text-sm text-charcoal cursor-pointer">
+              <span className="font-semibold">This listing contains AI-generated content</span>
+              <span className="block text-xs text-taupe mt-1 leading-relaxed">
+                Check this if the item, images, design, or description were created in whole or in
+                part with generative AI tools. Our Terms of Service require this to be disclosed,
+                and it lets buyers who prefer not to see AI content filter it out.
+              </span>
+            </label>
           </div>
         </div>
 
@@ -464,6 +528,78 @@ export default function EditListingPage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Listing Type & Digital File */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold border-b pb-3">Listing Type</h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setProductType('physical')}
+              className={`rounded-xl border-2 p-4 text-left text-sm font-semibold transition-all ${
+                productType === 'physical' ? 'border-gold bg-gold/10 text-charcoal' : 'border-blush bg-white text-taupe hover:border-gold/50'
+              }`}
+            >
+              Physical Item
+              <span className="block text-xs font-normal text-taupe mt-1">You pack and ship it to the buyer.</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setProductType('digital')}
+              className={`rounded-xl border-2 p-4 text-left text-sm font-semibold transition-all ${
+                productType === 'digital' ? 'border-gold bg-gold/10 text-charcoal' : 'border-blush bg-white text-taupe hover:border-gold/50'
+              }`}
+            >
+              Digital Template
+              <span className="block text-xs font-normal text-taupe mt-1">Buyer downloads instantly after payment.</span>
+            </button>
+          </div>
+
+          {productType === 'digital' && (
+            <div className="rounded-xl border border-blush bg-ivory/50 p-4 space-y-3">
+              <label className="label block">Template File *</label>
+              {digitalFilePath ? (
+                <div className="flex items-center gap-3 rounded-lg border border-gold/40 bg-white p-3">
+                  <FileText className="h-8 w-8 text-gold shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-charcoal truncate">{digitalFileName}</p>
+                    <p className="text-xs text-taupe">Uploaded — replace to change the file buyers receive</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-taupe">No file uploaded yet — add one before saving.</p>
+              )}
+              <div>
+                <input
+                  type="file"
+                  id="digital-file-input"
+                  accept=".pdf,.zip,.png,.jpg,.jpeg,.webp,.svg,application/pdf,application/zip,application/x-zip-compressed,image/png,image/jpeg,image/webp,image/svg+xml"
+                  onChange={handleDigitalFileChange}
+                  disabled={uploadingDigital}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="digital-file-input"
+                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                    uploadingDigital ? 'bg-blush text-taupe cursor-wait' : 'bg-gold text-charcoal hover:bg-gold/90 cursor-pointer'
+                  }`}
+                >
+                  <FileDown className="h-4 w-4" />
+                  {uploadingDigital ? `Uploading… ${digitalProgress}%` : digitalFilePath ? 'Replace File' : 'Choose File to Upload'}
+                </label>
+                {uploadingDigital && (
+                  <div className="mt-3 h-2 w-full rounded-full bg-blush overflow-hidden">
+                    <div className="h-full bg-gold transition-all duration-300" style={{ width: `${digitalProgress}%` }} />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-taupe">
+                PDF, ZIP, PNG, JPG, WebP, or SVG — 50 MB max. No shipping — orders deliver automatically.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Status */}

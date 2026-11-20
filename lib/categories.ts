@@ -576,9 +576,9 @@ export function isCollectiblesCategory(name: string): boolean {
   return name === COLLECTIBLES_CATEGORY_NAME
 }
 
-// Commission rate: 5% platform fee, 95% to seller
-export const PLATFORM_FEE_PERCENT = 5
-export const SELLER_KEEP_PERCENT = 95
+// Commission rate: 2% platform fee, 98% to seller
+export const PLATFORM_FEE_PERCENT = 2
+export const SELLER_KEEP_PERCENT = 98
 
 export function calculateSellerRevenue(totalPrice: number): number {
   return totalPrice * (SELLER_KEEP_PERCENT / 100)

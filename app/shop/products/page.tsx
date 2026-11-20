@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Search, Heart, Filter, ChevronDown, X, Tag, Gift } from 'lucide-react'
+import { Search, Heart, Filter, ChevronDown, X, Tag, Gift, Sparkles, Sparkle } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { getSubcategoriesForCategory } from '@/lib/categories'
@@ -41,6 +41,28 @@ function ProductsPage() {
   const [selectedSubcategory, setSelectedSubcategory] = useState(urlSubcategory)
   const [showFilters, setShowFilters] = useState(false)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(urlCategory)
+  // Buyer opt-out: hide AI-generated listings. Persisted in localStorage so
+  // the preference sticks across visits.
+  const [hideAi, setHideAi] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      return window.localStorage.getItem('hoe.hideAiGenerated') === '1'
+    } catch {
+      return false
+    }
+  })
+
+  function toggleHideAi() {
+    setHideAi((prev) => {
+      const next = !prev
+      try {
+        window.localStorage.setItem('hoe.hideAiGenerated', next ? '1' : '0')
+      } catch {
+        // Private mode — preference just won't persist.
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     if (urlCategory) {
@@ -94,11 +116,21 @@ function ProductsPage() {
     }
   }
 
-  const filteredProducts = products.filter(product =>
-    product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+  // PostgREST returns ai_generated on every row once migration 021 is applied.
+  // Before that the key is absent everywhere — hiding the toggle entirely is
+  // cleaner than showing one that can't do anything yet.
+  const aiColumnLive = products.some((p: any) => 'ai_generated' in p)
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch =
+      product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+    if (!matchesSearch) return false
+    // Buyer opt-out: drop AI-generated listings when the toggle is on.
+    if (hideAi && (product as any).ai_generated === true) return false
+    return true
+  })
 
   const activeFilters = [
     selectedCategory && selectedCategory !== 'All' ? selectedCategory : null,
@@ -135,6 +167,20 @@ function ProductsPage() {
                   </span>
                 )}
               </button>
+
+              {/* Buyer opt-out: hide AI-generated listings */}
+              {aiColumnLive && (
+                <button
+                  onClick={toggleHideAi}
+                  title={hideAi ? 'AI-generated listings are hidden' : 'Hide AI-generated listings'}
+                  className={`btn px-4 ${
+                    hideAi ? 'btn-primary' : 'btn-ghost border border-blush'
+                  }`}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {hideAi ? 'AI hidden' : 'No AI'}
+                </button>
+              )}
             </div>
 
             {/* Active Filters */}
@@ -352,6 +398,12 @@ function ProductsPage() {
                       <span className="badge badge-blush absolute bottom-3 left-3">
                         {product.condition}
                       </span>
+                      {(product as any).ai_generated === true && (
+                        <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 bg-charcoal/80 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-semibold">
+                          <Sparkle className="h-3 w-3" />
+                          AI
+                        </span>
+                      )}
                     </div>
 
                     {/* Product Info */}

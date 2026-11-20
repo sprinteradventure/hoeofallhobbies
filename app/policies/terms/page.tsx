@@ -16,7 +16,7 @@ export default async function TermsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">Terms of Service</h1>
-      <p className="text-sm text-taupe font-lora mb-8">Last updated: August 12, 2026</p>
+      <p className="text-sm text-taupe font-lora mb-8">Last updated: November 20, 2026</p>
 
       <div className="space-y-6 font-lora text-charcoal leading-relaxed text-sm">
         <section className="card">
@@ -72,6 +72,14 @@ export default async function TermsPage() {
             Prohibited items (weapons, hazardous materials, counterfeit goods, and items violating
             intellectual-property rights) may not be listed.
           </p>
+          <p className="mt-3">
+            <strong className="text-charcoal">AI-generated items must be labeled as such.</strong>{' '}
+            If an item, image, design, template, or description was created in whole or in part with
+            generative AI tools, the listing must clearly disclose that fact (for example, with an
+            &quot;AI-generated&quot; note in the title, description, or item details). Failure to
+            disclose AI-generated content may result in the listing being removed or the account
+            being suspended.
+          </p>
         </section>
 
         <section className="card">
@@ -79,8 +87,18 @@ export default async function TermsPage() {
             6. Intellectual property
           </h2>
           <p>
-            Sellers retain ownership of their listings and grant us a license to display and
-            promote them on the platform. Report infringement concerns to{' '}
+            All content posted on {siteName} — including listings, product images, digital files,
+            shop pages, descriptions, and reviews — remains the exclusive property of the seller or
+            creator who posted it. It is <strong className="text-charcoal">not</strong> the property
+            of {siteName}. We claim no ownership of seller content.
+          </p>
+          <p className="mt-3">
+            By posting content, you grant us only a limited, non-exclusive license to host, display,
+            and promote your listings on the platform and in our marketing channels (including
+            social media and product feeds) so we can operate and market the marketplace. You can
+            end this license by removing your listings, though copies may persist in backups and
+            already-published marketing materials for a reasonable time. Sellers are responsible for
+            ensuring they have the rights to everything they post. Report infringement concerns to{' '}
             <a href="mailto:hoardstashco@gmail.com" className="text-gold hover:underline">
               hoardstashco@gmail.com
             </a>

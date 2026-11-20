@@ -37,7 +37,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }))
 
-    return [...staticRoutes, ...productRoutes]
+    // Seller storefronts (migration 018). Pre-migration this table doesn't
+    // exist — skip silently and ship the product routes alone.
+    let shopRoutes: MetadataRoute.Sitemap = []
+    try {
+      const { data: shops } = await admin.from('shops').select('slug, updated_at')
+      if (shops) {
+        shopRoutes = shops.map((s: any) => ({
+          url: `${siteUrl}/shops/${s.slug}`,
+          lastModified: s.updated_at || undefined,
+          changeFrequency: 'weekly',
+          priority: 0.5,
+        }))
+      }
+    } catch {
+      // Shops not enabled yet — nothing to add.
+    }
+
+    return [...staticRoutes, ...productRoutes, ...shopRoutes]
   } catch (err) {
     // Never let a sitemap failure 500 — static routes alone are still valid.
     console.error('Sitemap product fetch failed:', err)

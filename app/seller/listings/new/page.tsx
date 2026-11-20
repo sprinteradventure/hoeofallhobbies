@@ -8,7 +8,8 @@ import { useSiteCategories, useSiteType, getSiteName } from '@/lib/site-context'
 import { getSubcategoriesForCategory, isCollectiblesCategory, COLLECTIBLES_CATEGORY_NAME } from '@/lib/categories'
 import ImageUploader from '@/components/ImageUploader'
 import VideoUploader from '@/components/VideoUploader'
-import { Wallet, AlertTriangle, ExternalLink, Plus, Sparkles } from 'lucide-react'
+import { uploadDigitalFile } from '@/lib/uploadMedia'
+import { Wallet, AlertTriangle, ExternalLink, Plus, Sparkles, Package, FileDown, FileText } from 'lucide-react'
 
 const CONDITIONS = ['new', 'like-new', 'used', 'damaged']
 
@@ -27,6 +28,13 @@ export default function NewListingPage() {
   const [error, setError] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
+
+  // ── Digital template listings ─────────────────────────────────────────────
+  const [productType, setProductType] = useState<'physical' | 'digital'>('physical')
+  const [digitalFile, setDigitalFile] = useState<{ path: string; name: string; size: number } | null>(null)
+  const [uploadingDigital, setUploadingDigital] = useState(false)
+  const [digitalProgress, setDigitalProgress] = useState(0)
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([])
 
@@ -50,6 +58,7 @@ export default function NewListingPage() {
     length_in: '',
     width_in: '',
     height_in: '',
+    ai_generated: false,
   })
 
   // Check payout status on mount
@@ -164,6 +173,28 @@ export default function NewListingPage() {
     )
   }
 
+  async function handleDigitalFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    // Reset so picking the same file again still fires onChange.
+    e.target.value = ''
+    if (!file) return
+    if (file.size > 50 * 1024 * 1024) {
+      setError('Files must be 50 MB or smaller.')
+      return
+    }
+    setUploadingDigital(true)
+    setDigitalProgress(0)
+    setError('')
+    try {
+      const path = await uploadDigitalFile(file, setDigitalProgress)
+      setDigitalFile({ path, name: file.name, size: file.size })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'File upload failed. Please try again.')
+    } finally {
+      setUploadingDigital(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -179,6 +210,14 @@ export default function NewListingPage() {
 
       if (selectedCategories.length === 0) {
         throw new Error('Please choose at least one category.')
+      }
+
+      if (productType === 'digital' && !digitalFile) {
+        throw new Error('Please upload the template file buyers will download.')
+      }
+
+      if (productType === 'physical' && !formData.weight_oz) {
+        throw new Error('Please enter the packed weight for shipping.')
       }
 
       const { data: { session } } = await supabase.auth.getSession()
@@ -204,10 +243,13 @@ export default function NewListingPage() {
           condition: formData.condition,
           quantity: parseInt(formData.quantity),
           tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-          weight_oz: parseFloat(formData.weight_oz),
-          length_in: formData.length_in ? parseFloat(formData.length_in) : null,
-          width_in: formData.width_in ? parseFloat(formData.width_in) : null,
-          height_in: formData.height_in ? parseFloat(formData.height_in) : null,
+          product_type: productType,
+          digital_file_path: productType === 'digital' ? digitalFile?.path : null,
+          ai_generated: formData.ai_generated,
+          weight_oz: productType === 'digital' ? null : parseFloat(formData.weight_oz),
+          length_in: productType === 'digital' ? null : formData.length_in ? parseFloat(formData.length_in) : null,
+          width_in: productType === 'digital' ? null : formData.width_in ? parseFloat(formData.width_in) : null,
+          height_in: productType === 'digital' ? null : formData.height_in ? parseFloat(formData.height_in) : null,
           images: imageUrls.length > 0 ? imageUrls : [],
           video_url: videoUrl,
         }),
@@ -228,10 +270,11 @@ export default function NewListingPage() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const target = e.target as HTMLInputElement
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: target.type === 'checkbox' ? target.checked : value,
     }))
   }
 
@@ -243,8 +286,8 @@ export default function NewListingPage() {
         <h1 className="font-cormorant text-4xl font-bold text-charcoal mb-2">Create New Listing</h1>
         <p className="text-taupe font-lora">
           {siteType === 'holidays'
-            ? `List your holiday decor and party supplies on ${siteName}. You keep 95% of every sale.`
-            : `List your craft and hobby supplies. You keep 95% of every sale.`}
+            ? `List your holiday decor and party supplies on ${siteName}. You keep 98% of every sale.`
+            : `List your craft and hobby supplies. You keep 98% of every sale.`}
         </p>
       </div>
 
@@ -299,6 +342,114 @@ export default function NewListingPage() {
           <VideoUploader value={videoUrl} onChange={setVideoUrl} />
         </div>
 
+        {/* Listing Type */}
+        <div className="space-y-4">
+          <h2 className="font-cormorant text-xl font-bold text-charcoal border-b border-blush pb-3">Listing Type</h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setProductType('physical')}
+              className={`flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                productType === 'physical'
+                  ? 'border-gold bg-gold/10'
+                  : 'border-blush bg-white hover:border-gold/50'
+              }`}
+            >
+              <Package className={`h-6 w-6 shrink-0 mt-0.5 ${productType === 'physical' ? 'text-gold' : 'text-taupe'}`} />
+              <span>
+                <span className={`block font-semibold text-sm ${productType === 'physical' ? 'text-charcoal' : 'text-taupe'}`}>
+                  Physical Item
+                </span>
+                <span className="block text-xs text-taupe mt-1">
+                  Something you pack and ship to the buyer.
+                </span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setProductType('digital')}
+              className={`flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                productType === 'digital'
+                  ? 'border-gold bg-gold/10'
+                  : 'border-blush bg-white hover:border-gold/50'
+              }`}
+            >
+              <FileDown className={`h-6 w-6 shrink-0 mt-0.5 ${productType === 'digital' ? 'text-gold' : 'text-taupe'}`} />
+              <span>
+                <span className={`block font-semibold text-sm ${productType === 'digital' ? 'text-charcoal' : 'text-taupe'}`}>
+                  Digital Template
+                </span>
+                <span className="block text-xs text-taupe mt-1">
+                  A file the buyer downloads instantly after payment — patterns, printables, presets, planners.
+                </span>
+              </span>
+            </button>
+          </div>
+
+          {/* ── Digital file upload ─────────────────────────────────────── */}
+          {productType === 'digital' && (
+            <div className="rounded-xl border border-blush bg-ivory/50 p-4 space-y-3">
+              <label className="label block">Template File *</label>
+              <p className="text-xs text-taupe">
+                PDF, ZIP, PNG, JPG, WebP, or SVG — 50 MB max. Buyers can only download it after paying, and your preview images above are what shoppers see.
+              </p>
+
+              {digitalFile ? (
+                <div className="flex items-center gap-3 rounded-lg border border-gold/40 bg-white p-3">
+                  <FileText className="h-8 w-8 text-gold shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-charcoal truncate">{digitalFile.name}</p>
+                    <p className="text-xs text-taupe">{(digitalFile.size / 1024 / 1024).toFixed(2)} MB — uploaded</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDigitalFile(null)}
+                    className="btn btn-ghost px-3 py-1.5 text-xs"
+                  >
+                    Replace
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <input
+                    type="file"
+                    id="digital-file-input"
+                    accept=".pdf,.zip,.png,.jpg,.jpeg,.webp,.svg,application/pdf,application/zip,application/x-zip-compressed,image/png,image/jpeg,image/webp,image/svg+xml"
+                    onChange={handleDigitalFileChange}
+                    disabled={uploadingDigital}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="digital-file-input"
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                      uploadingDigital
+                        ? 'bg-blush text-taupe cursor-wait'
+                        : 'bg-gold text-charcoal hover:bg-gold/90 cursor-pointer'
+                    }`}
+                  >
+                    <FileDown className="h-4 w-4" />
+                    {uploadingDigital ? `Uploading… ${digitalProgress}%` : 'Choose File to Upload'}
+                  </label>
+                  {uploadingDigital && (
+                    <div className="mt-3 h-2 w-full rounded-full bg-blush overflow-hidden">
+                      <div
+                        className="h-full bg-gold transition-all duration-300"
+                        style={{ width: `${digitalProgress}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <p className="text-xs text-taupe">
+                No shipping needed — delivery is automatic. Quantity = number of licenses you want to sell.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Basic Info */}
         <div className="space-y-4">
           <h2 className="font-cormorant text-xl font-bold text-charcoal border-b border-blush pb-3">Basic Information</h2>
@@ -327,6 +478,26 @@ export default function NewListingPage() {
               className="input resize-none"
               required
             />
+          </div>
+
+          {/* AI disclosure — required by the Terms of Service */}
+          <div className="flex items-start gap-3 rounded-xl border border-blush bg-ivory/50 p-4">
+            <input
+              id="ai_generated"
+              type="checkbox"
+              name="ai_generated"
+              checked={formData.ai_generated}
+              onChange={handleChange}
+              className="h-4 w-4 mt-0.5 rounded accent-gold"
+            />
+            <label htmlFor="ai_generated" className="text-sm text-charcoal cursor-pointer">
+              <span className="font-semibold">This listing contains AI-generated content</span>
+              <span className="block text-xs text-taupe mt-1 leading-relaxed">
+                Check this if the item, images, design, or description were created in whole or in
+                part with generative AI tools. Our Terms of Service require this to be disclosed,
+                and it lets buyers who prefer not to see AI content filter it out.
+              </span>
+            </label>
           </div>
         </div>
 
@@ -498,12 +669,24 @@ export default function NewListingPage() {
               />
             </div>
             <p className="text-xs text-taupe mt-2">
-              You keep <span className="font-semibold text-gold">95%</span>. Platform fee is only 5%.
+              You keep <span className="font-semibold text-gold">98%</span>. Platform fee is only 2%.
             </p>
           </div>
         </div>
 
-        {/* Shipping Info */}
+        {/* Shipping Info (physical items only — digital files deliver instantly) */}
+        {productType === 'digital' ? (
+          <div className="space-y-4">
+            <h2 className="font-cormorant text-xl font-bold text-charcoal border-b border-blush pb-3">Shipping</h2>
+            <div className="flex items-start gap-3 rounded-xl border border-blush bg-ivory/50 p-4">
+              <FileDown className="h-5 w-5 text-gold shrink-0 mt-0.5" />
+              <p className="text-sm text-taupe leading-relaxed">
+                No shipping needed for digital templates — buyers download the file instantly after
+                payment, and the order is marked delivered automatically.
+              </p>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-4">
           <h2 className="font-cormorant text-xl font-bold text-charcoal border-b border-blush pb-3">Shipping</h2>
 
@@ -565,6 +748,7 @@ export default function NewListingPage() {
             </p>
           </div>
         </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-4 pt-4 border-t border-blush">

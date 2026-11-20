@@ -41,7 +41,13 @@ const listingSchema = z.object({
   tags: z.array(z.string().trim().min(1).max(50)).max(30).optional(),
   images: z.array(z.string().max(2048)).max(10, 'Maximum 10 images'),
   video_url: z.string().max(2048).nullable().optional(),
-  weight_oz: z.number().positive().max(10000),
+  // Digital templates: 'digital' = instant-download file listing (no shipping).
+  // digital_file_path is the storage path in the private digital-files bucket.
+  product_type: z.enum(['physical', 'digital']).optional().default('physical'),
+  digital_file_path: z.string().max(512).nullable().optional(),
+  // AI-content disclosure (Terms of Service; powers the buyer's hide-AI filter).
+  ai_generated: z.boolean().optional().default(false),
+  weight_oz: z.number().positive().max(10000).nullable().optional(),
   length_in: z.number().positive().max(1000).nullable().optional(),
   width_in: z.number().positive().max(1000).nullable().optional(),
   height_in: z.number().positive().max(1000).nullable().optional(),
@@ -102,6 +108,25 @@ export async function POST(request: NextRequest) {
     }
     const data = parsed.data
 
+    // Digital listings: a file is required, it must live in the private
+    // digital-files bucket under the seller's own folder, and physical-only
+    // shipping fields are dropped. Physical listings still require weight.
+    const isDigital = data.product_type === 'digital'
+    if (isDigital) {
+      const path = data.digital_file_path
+      if (!path || !path.startsWith(`${user.id}/`)) {
+        return NextResponse.json(
+          { error: 'Please upload the template file buyers will download.' },
+          { status: 400 }
+        )
+      }
+    } else if (data.weight_oz == null) {
+      return NextResponse.json(
+        { error: 'Weight is required for physical items.' },
+        { status: 400 }
+      )
+    }
+
     // Site is taken from the x-site-type header (set by middleware) with a
     // Host fallback — never trusted from the client body. See
     // lib/site-context-server.ts getSiteType().
@@ -134,10 +159,13 @@ export async function POST(request: NextRequest) {
         condition: data.condition,
         quantity: data.quantity,
         tags: data.tags ?? [],
-        weight_oz: data.weight_oz,
-        length_in: data.length_in ?? null,
-        width_in: data.width_in ?? null,
-        height_in: data.height_in ?? null,
+        product_type: isDigital ? 'digital' : 'physical',
+        digital_file_path: isDigital ? data.digital_file_path ?? null : null,
+        ai_generated: data.ai_generated,
+        weight_oz: isDigital ? null : data.weight_oz,
+        length_in: isDigital ? null : data.length_in ?? null,
+        width_in: isDigital ? null : data.width_in ?? null,
+        height_in: isDigital ? null : data.height_in ?? null,
         is_active: true,
         listing_date: new Date().toISOString(),
         images: data.images,

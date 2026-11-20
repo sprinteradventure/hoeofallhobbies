@@ -15,16 +15,21 @@ import { processListingImage } from '@/lib/imagePipeline'
 // ============================================================================
 
 const BUCKET = 'product-images'
+const DIGITAL_BUCKET = 'digital-files'
 
 type SignedUpload = {
   path: string
   token: string
   signedUrl: string
-  publicUrl: string
+  publicUrl: string | null
+}
+
+function bucketForKind(kind: 'image' | 'video' | 'digital') {
+  return kind === 'digital' ? DIGITAL_BUCKET : BUCKET
 }
 
 async function mintSignedUpload(
-  kind: 'image' | 'video',
+  kind: 'image' | 'video' | 'digital',
   contentType: string,
   fileName?: string,
   size?: number
@@ -54,9 +59,9 @@ async function mintSignedUpload(
   return data as SignedUpload
 }
 
-async function putToSignedUrl(signed: SignedUpload, blob: Blob, contentType: string) {
+async function putToSignedUrl(signed: SignedUpload, blob: Blob, contentType: string, bucket: string) {
   const { error } = await supabase.storage
-    .from(BUCKET)
+    .from(bucket)
     .uploadToSignedUrl(signed.path, signed.token, blob, { contentType })
   if (error) throw new Error('Upload failed. Please try again.')
 }
@@ -70,14 +75,14 @@ async function uploadImage(file: File): Promise<string> {
   const baseName = crypto.randomUUID()
 
   const signed = await mintSignedUpload('image', processed.mainType, `${baseName}.${processed.mainExt}`, processed.main.size)
-  await putToSignedUrl(signed, processed.main, processed.mainType)
+  await putToSignedUrl(signed, processed.main, processed.mainType, BUCKET)
 
   // Thumbnail is best-effort: if it fails, ListingImage's onError fallback
   // serves the main image in card contexts instead.
   if (processed.thumb) {
     try {
       const thumbSigned = await mintSignedUpload('image', 'image/webp', `${baseName}_thumb.webp`, processed.thumb.size)
-      await putToSignedUrl(thumbSigned, processed.thumb, 'image/webp')
+      await putToSignedUrl(thumbSigned, processed.thumb, 'image/webp', BUCKET)
     } catch (err) {
       console.warn('[upload] thumbnail upload failed; continuing without it', err)
     }
@@ -100,14 +105,15 @@ export async function uploadToStorage(
   }
 
   const signed = await mintSignedUpload(kind, file.type, undefined, file.size)
+  const bucket = bucketForKind(kind)
 
   if (!onProgress) {
     // Small files: use the storage client helper (handles URL details).
     const { error } = await supabase.storage
-      .from(BUCKET)
+      .from(bucket)
       .uploadToSignedUrl(signed.path, signed.token, file)
     if (error) throw new Error('Upload failed. Please try again.')
-    return signed.publicUrl
+    return signed.publicUrl ?? signed.path
   }
 
   // Large files: XHR PUT so we get real upload progress events.
@@ -133,5 +139,50 @@ export async function uploadToStorage(
     xhr.send(file)
   })
 
-  return signed.publicUrl
+  return signed.publicUrl ?? signed.path
+}
+
+/**
+ * Upload a digital product file (template PDF/ZIP/image) to the PRIVATE
+ * `digital-files` bucket and return its storage path. The path is stored on
+ * products.digital_file_path; buyers fetch the bytes through the verified
+ * /api/downloads route (signed URL), never via a public URL.
+ */
+export async function uploadDigitalFile(
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<string> {
+  const signed = await mintSignedUpload('digital', file.type, undefined, file.size)
+
+  if (!onProgress) {
+    const { error } = await supabase.storage
+      .from(DIGITAL_BUCKET)
+      .uploadToSignedUrl(signed.path, signed.token, file)
+    if (error) throw new Error('Upload failed. Please try again.')
+    return signed.path
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const target = signed.signedUrl.startsWith('http')
+    ? signed.signedUrl
+    : `${supabaseUrl}${signed.signedUrl}`
+
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('PUT', target)
+    xhr.setRequestHeader('Content-Type', file.type)
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100))
+      }
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve()
+      else reject(new Error('Upload failed. Please try again.'))
+    }
+    xhr.onerror = () => reject(new Error('Upload failed. Please check your connection and try again.'))
+    xhr.send(file)
+  })
+
+  return signed.path
 }

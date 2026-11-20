@@ -23,17 +23,23 @@ export const dynamic = 'force-dynamic'
 // ============================================================================
 
 const BUCKET = 'product-images'
+// Digital download files (templates etc.) live in a SEPARATE PRIVATE bucket —
+// they must never be in the public product-images bucket, where anyone with
+// the URL could download a paid template without buying.
+const DIGITAL_BUCKET = 'digital-files'
 
 // R8: server-side size caps on what we sign for. Images are compressed
 // client-side to <= 10 MB (ImageUploader); videos legitimately run larger,
 // so they get their own 50 MB cap (VideoUploader) instead of a blanket 10 MB.
+// Digital template files (PDF/ZIP/images) share the 50 MB cap.
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024
+const MAX_DIGITAL_BYTES = 50 * 1024 * 1024
 
 // R6: signed-upload minting is throttled per user (30/hour).
 const MAX_SIGN_PER_HOUR = 30
 
-const ALLOWED: Record<'image' | 'video', Record<string, string>> = {
+const ALLOWED: Record<'image' | 'video' | 'digital', Record<string, string>> = {
   image: {
     'image/jpeg': 'jpg',
     'image/png': 'png',
@@ -44,6 +50,15 @@ const ALLOWED: Record<'image' | 'video', Record<string, string>> = {
     'video/mp4': 'mp4',
     'video/webm': 'webm',
     'video/quicktime': 'mov',
+  },
+  digital: {
+    'application/pdf': 'pdf',
+    'application/zip': 'zip',
+    'application/x-zip-compressed': 'zip',
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/webp': 'webp',
+    'image/svg+xml': 'svg',
   },
 }
 
@@ -87,27 +102,26 @@ export async function POST(request: NextRequest) {
 
     // --- Validate the requested upload ---------------------------------------
     const body = await request.json().catch(() => ({}))
-    const kind = body?.kind === 'video' ? 'video' : body?.kind === 'image' ? 'image' : null
+    const kind =
+      body?.kind === 'video' ? 'video' : body?.kind === 'image' ? 'image' : body?.kind === 'digital' ? 'digital' : null
     const contentType = typeof body?.contentType === 'string' ? body.contentType : ''
 
     if (!kind) {
       return NextResponse.json(
-        { error: 'kind must be "image" or "video".' },
+        { error: 'kind must be "image", "video", or "digital".' },
         { status: 400 }
       )
     }
 
     const ext = ALLOWED[kind][contentType]
     if (!ext) {
-      return NextResponse.json(
-        {
-          error:
-            kind === 'video'
-              ? 'Unsupported video type. Please use MP4, WebM, or MOV.'
-              : 'Unsupported image type. Please use JPEG, PNG, WebP, or GIF.',
-        },
-        { status: 415 }
-      )
+      const message =
+        kind === 'video'
+          ? 'Unsupported video type. Please use MP4, WebM, or MOV.'
+          : kind === 'digital'
+            ? 'Unsupported file type. Please use PDF, ZIP, PNG, JPG, WebP, or SVG.'
+            : 'Unsupported image type. Please use JPEG, PNG, WebP, or GIF.'
+      return NextResponse.json({ error: message }, { status: 415 })
     }
 
     // R8: enforce a server-side size cap on the upload we sign for. The
@@ -117,30 +131,41 @@ export async function POST(request: NextRequest) {
     const size = body?.size
     if (size !== undefined && size !== null) {
       const bytes = typeof size === 'number' ? size : Number(size)
-      const cap = kind === 'video' ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES
+      const cap = kind === 'video' ? MAX_VIDEO_BYTES : kind === 'digital' ? MAX_DIGITAL_BYTES : MAX_IMAGE_BYTES
       if (!Number.isFinite(bytes) || bytes <= 0) {
         return NextResponse.json({ error: 'Invalid size.' }, { status: 400 })
       }
       if (bytes > cap) {
-        return NextResponse.json(
-          {
-            error:
-              kind === 'video'
-                ? 'Videos must be 50 MB or smaller.'
-                : 'Images must be 10 MB or smaller.',
-          },
-          { status: 400 }
-        )
+        const message =
+          kind === 'video'
+            ? 'Videos must be 50 MB or smaller.'
+            : kind === 'digital'
+              ? 'Files must be 50 MB or smaller.'
+              : 'Images must be 10 MB or smaller.'
+        return NextResponse.json({ error: message }, { status: 400 })
       }
     }
 
-    // --- Ensure the public bucket exists (tolerate already-exists) ------------
-    const { error: bucketError } = await admin.storage.createBucket(BUCKET, { public: true })
-    if (bucketError) {
-      const msg = (bucketError.message || '').toLowerCase()
-      const alreadyExists =
-        msg.includes('already exists') || (bucketError as any).statusCode === '409'
-      if (!alreadyExists) throw bucketError
+    // --- Ensure the bucket exists (tolerate already-exists) -------------------
+    // Digital files live in a PRIVATE bucket; buyers only ever get a
+    // short-lived signed URL from /api/downloads after their paid order is
+    // verified server-side.
+    if (kind === 'digital') {
+      const { error: digitalBucketError } = await admin.storage.createBucket(DIGITAL_BUCKET)
+      if (digitalBucketError) {
+        const msg = (digitalBucketError.message || '').toLowerCase()
+        const alreadyExists =
+          msg.includes('already exists') || (digitalBucketError as any).statusCode === '409'
+        if (!alreadyExists) throw digitalBucketError
+      }
+    } else {
+      const { error: bucketError } = await admin.storage.createBucket(BUCKET, { public: true })
+      if (bucketError) {
+        const msg = (bucketError.message || '').toLowerCase()
+        const alreadyExists =
+          msg.includes('already exists') || (bucketError as any).statusCode === '409'
+        if (!alreadyExists) throw bucketError
+      }
     }
 
     // --- Mint the signed upload URL -------------------------------------------
@@ -162,19 +187,22 @@ export async function POST(request: NextRequest) {
     }
 
     const path = `${user.id}/${fileName || `${crypto.randomUUID()}.${ext}`}`
+    const bucket = kind === 'digital' ? DIGITAL_BUCKET : BUCKET
     const { data: signed, error: signError } = await admin.storage
-      .from(BUCKET)
+      .from(bucket)
       .createSignedUploadUrl(path)
 
     if (signError || !signed) throw signError || new Error('Failed to sign upload URL')
 
-    const { data: publicUrl } = admin.storage.from(BUCKET).getPublicUrl(path)
+    // Digital files have no public URL — the private bucket only serves them
+    // through the verified /api/downloads route.
+    const publicUrl = kind === 'digital' ? null : admin.storage.from(bucket).getPublicUrl(path).data.publicUrl
 
     return NextResponse.json({
       path,
       token: signed.token,
       signedUrl: signed.signedUrl,
-      publicUrl: publicUrl.publicUrl,
+      publicUrl,
     })
   } catch (error) {
     console.error('Signed upload URL error:', error)

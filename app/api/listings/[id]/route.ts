@@ -30,6 +30,12 @@ const listingUpdateSchema = z.object({
   subcategory: z.string().trim().max(100).nullable().optional(),
   tags: z.array(z.string().trim().min(1).max(50)).max(30).optional(),
   is_active: z.boolean(),
+  // Optional: converting the listing between physical and digital. When
+  // product_type is sent, digital_file_path must accompany 'digital'.
+  product_type: z.enum(['physical', 'digital']).optional(),
+  digital_file_path: z.string().max(512).nullable().optional(),
+  // AI-content disclosure (Terms of Service; powers the buyer's hide-AI filter).
+  ai_generated: z.boolean().optional(),
 })
 
 function blockedResponse(matched: string[]) {
@@ -97,6 +103,18 @@ export async function POST(
     }
     const data = parsed.data
 
+    // Converting to a digital listing requires a file in the seller's own
+    // storage folder (same rule as creation).
+    if (data.product_type === 'digital') {
+      const path = data.digital_file_path
+      if (!path || !path.startsWith(`${user.id}/`)) {
+        return NextResponse.json(
+          { error: 'Please upload the template file buyers will download.' },
+          { status: 400 }
+        )
+      }
+    }
+
     // ── Content screening (same rules as creation) ────────────────────────
     const screening = screenListingText(data.title, data.description)
     if (screening.blocked) {
@@ -119,6 +137,16 @@ export async function POST(
         quantity: data.quantity,
         tags: data.tags ?? [],
         is_active: data.is_active,
+        ...(data.product_type === 'digital'
+          ? {
+              product_type: 'digital' as const,
+              digital_file_path: data.digital_file_path ?? null,
+              weight_oz: null,
+            }
+          : data.product_type === 'physical'
+            ? { product_type: 'physical' as const, digital_file_path: null }
+            : {}),
+        ...(data.ai_generated !== undefined ? { ai_generated: data.ai_generated } : {}),
       })
       .eq('id', params.id)
 

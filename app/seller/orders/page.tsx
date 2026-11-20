@@ -51,7 +51,13 @@ function OrderCard({ order, labelBusy, labelError, onGenerateLabel, onUpdateStat
         <div>
           <p className="text-xs text-taupe uppercase tracking-wider">Amount</p>
           <p className="text-lg font-bold text-charcoal">${order.total_price.toFixed(2)}</p>
-          <p className="text-xs text-taupe">You keep 95%</p>
+          <p className="text-xs text-taupe">You keep 98%</p>
+          {(order as any).coupon_code && (
+            <p className="text-xs text-gold font-lora mt-0.5">
+              Code {(order as any).coupon_code}
+              {(order as any).discount_amount > 0 && ` · −$${Number((order as any).discount_amount).toFixed(2)}`}
+            </p>
+          )}
         </div>
         <div>
           <p className="text-xs text-taupe uppercase tracking-wider">Quantity</p>

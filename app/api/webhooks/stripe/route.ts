@@ -64,6 +64,52 @@ export async function POST(request: NextRequest) {
 
         if (error) throw error
 
+        // --- Redeem seller coupon (migration 018) ---------------------------
+        // Count redemption only now — payment actually succeeded. The RPC
+        // atomically refuses to exceed max_uses (concurrent checkouts racing
+        // the last use). Never fail the webhook over coupon bookkeeping.
+        const couponId = session.metadata?.coupon_id
+        if (couponId) {
+          try {
+            await admin.rpc('redeem_seller_coupon', { p_coupon_id: couponId })
+          } catch (couponError) {
+            console.error('Coupon redemption count failed (order still paid):', couponError)
+          }
+        }
+
+        // --- Auto-deliver digital-only orders (migration 020) ---------------
+        // An order whose items are ALL digital templates has nothing to ship:
+        // mark it 'delivered' immediately so the buyer can download. Physical
+        // or mixed orders stay 'paid' and follow the normal shipping flow.
+        // Never fail the webhook over this bookkeeping. Pre-migration (no
+        // product_type column) the query errors and orders simply stay 'paid'.
+        try {
+          const { data: orderItems } = await admin
+            .from('order_items')
+            .select('order_id, product:products(product_type)')
+            .in('order_id', orderIds)
+
+          const allDigitalByOrder = new Map<string, boolean>()
+          for (const row of orderItems || []) {
+            const type = (row as any).product?.product_type
+            const existing = allDigitalByOrder.get((row as any).order_id)
+            allDigitalByOrder.set((row as any).order_id, (existing ?? true) && type === 'digital')
+          }
+
+          const digitalOnlyOrderIds = Array.from(allDigitalByOrder.entries())
+            .filter(([, allDigital]) => allDigital)
+            .map(([orderId]) => orderId)
+
+          if (digitalOnlyOrderIds.length > 0) {
+            await admin
+              .from('orders')
+              .update({ status: 'delivered' })
+              .in('id', digitalOnlyOrderIds)
+          }
+        } catch (digitalDeliveryError) {
+          console.error('Digital auto-delivery failed (orders remain paid):', digitalDeliveryError)
+        }
+
         // --- Buy Shippo labels for orders that checked out with real rates --
         // CRITICAL: label failures must never fail the webhook. Each order is
         // handled independently; on failure the order stays 'paid' with null

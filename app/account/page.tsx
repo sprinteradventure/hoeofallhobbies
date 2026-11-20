@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { UserProfile } from '@/lib/types'
-import { User, Package, Store, LogOut, ShoppingBag, Edit2, Check, X, Mail } from 'lucide-react'
+import { User, Package, Store, LogOut, ShoppingBag, Edit2, Check, X, Mail, Heart } from 'lucide-react'
 
 export default function AccountPage() {
   const router = useRouter()
@@ -257,6 +257,14 @@ export default function AccountPage() {
           <div>
             <p className="font-semibold text-charcoal">My Cart</p>
             <p className="text-sm text-taupe">Review items before checkout</p>
+          </div>
+        </Link>
+
+        <Link href="/account/saved" className="card hover:shadow-md transition-shadow flex items-center gap-3">
+          <Heart className="h-6 w-6 text-gold flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-charcoal">Saved Items</p>
+            <p className="text-sm text-taupe">Listings you&apos;ve hearted</p>
           </div>
         </Link>
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Heart, Share2, ShoppingCart, ArrowLeft, Star, Store, Truck, Flag, X, BadgeCheck, MessageCircle } from 'lucide-react'
+import { Heart, Share2, ShoppingCart, ArrowLeft, Star, Store, Truck, Flag, X, BadgeCheck, MessageCircle, Zap, Download, Sparkle } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Product } from '@/lib/types'
 import { CATEGORIES, getSubcategoriesForCategory } from '@/lib/categories'
@@ -44,11 +44,51 @@ export default function ProductDetailClient() {
   const [reportSubmitting, setReportSubmitting] = useState(false)
   const [reportMessage, setReportMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
   const [messagingSeller, setMessagingSeller] = useState(false)
+  // Digital listings: whether the signed-in viewer has a paid order containing
+  // this product ( gates the "Download" button). product_type only exists
+  // after migration 020; before that every product is physical.
+  const [canDownload, setCanDownload] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const isDigital = product?.product_type === 'digital'
 
   useEffect(() => {
     fetchProduct()
     fetchViewer()
   }, [productId])
+
+  // Best-effort purchase check for the download button. Tries order_items
+  // (complete) and falls back to the legacy orders.product_id column if the
+  // order_items read is denied by RLS.
+  useEffect(() => {
+    async function checkPurchase() {
+      if (!viewerId || !isDigital) {
+        setCanDownload(false)
+        return
+      }
+      const PAID = ['paid', 'shipped', 'delivered', 'completed']
+      try {
+        const { data: orders } = await supabase
+          .from('orders')
+          .select('id, product_id, status')
+          .eq('buyer_id', viewerId)
+          .in('status', PAID)
+        const paidOrderIds = (orders || []).map((o: any) => o.id)
+        try {
+          const { data: items } = await supabase
+            .from('order_items')
+            .select('order_id, product_id')
+            .in('order_id', paidOrderIds.length > 0 ? paidOrderIds : ['00000000-0000-0000-0000-000000000000'])
+          setCanDownload((items || []).some((row: any) => row.product_id === productId))
+        } catch {
+          setCanDownload((orders || []).some((o: any) => o.product_id === productId))
+        }
+      } catch {
+        setCanDownload(false)
+      }
+    }
+    checkPurchase()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewerId, product])
 
   async function fetchViewer() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -100,6 +140,40 @@ export default function ProductDetailClient() {
       router.push('/shop/products')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Verified download: /api/downloads confirms the paid order server-side and
+  // streams the private file; we save it via a blob URL.
+  async function handleDownload() {
+    setDownloading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Please sign in again to download your purchase.')
+      const res = await fetch(`/api/downloads/${productId}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d?.error || 'Download failed. Please try again.')
+      }
+      let filename = `${product?.title || 'download'}`.replace(/[^\w.-]+/g, '-')
+      const disposition = res.headers.get('content-disposition') || ''
+      const match = disposition.match(/filename="?([^";]+)"?/)
+      if (match) filename = match[1]
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Download failed. Please try again.')
+    } finally {
+      setDownloading(false)
     }
   }
 
@@ -309,6 +383,21 @@ export default function ProductDetailClient() {
               <div className="flex items-center gap-2 mb-2">
                 <span className="badge badge-gold">{product.category}</span>
                 {product.subcategory && <span className="badge badge-blush">{product.subcategory}</span>}
+                {isDigital && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gold/10 text-gold border border-gold/40">
+                    <Zap className="h-3.5 w-3.5" />
+                    Instant Download
+                  </span>
+                )}
+                {(product as any).ai_generated === true && (
+                  <span
+                    title="The seller disclosed that this listing contains AI-generated content"
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-charcoal text-white"
+                  >
+                    <Sparkle className="h-3.5 w-3.5" />
+                    AI-generated
+                  </span>
+                )}
               </div>
               <h1 className="font-cormorant text-3xl md:text-4xl font-bold text-charcoal mb-3">{product.title}</h1>
               <p className="text-3xl font-bold text-gold">${product.price.toFixed(2)}</p>
@@ -323,9 +412,18 @@ export default function ProductDetailClient() {
                   </div>
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-charcoal">
-                        {product.seller.seller_name || product.seller.username || product.seller.full_name || 'Unknown Seller'}
-                      </p>
+                      {product.seller.username ? (
+                        <Link
+                          href={`/shops/${product.seller.username}`}
+                          className="font-semibold text-charcoal hover:text-gold hover:underline underline-offset-2 transition-colors"
+                        >
+                          {product.seller.seller_name || product.seller.username || product.seller.full_name || 'Unknown Seller'}
+                        </Link>
+                      ) : (
+                        <p className="font-semibold text-charcoal">
+                          {product.seller.seller_name || product.seller.username || product.seller.full_name || 'Unknown Seller'}
+                        </p>
+                      )}
                       {showVerifiedSellerChip && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gold/10 text-gold border border-gold/40">
                           <BadgeCheck className="h-3.5 w-3.5" />
@@ -389,16 +487,41 @@ export default function ProductDetailClient() {
               <p className="text-charcoal whitespace-pre-wrap leading-relaxed">{product.description}</p>
             </div>
 
-            {/* Shipping */}
+            {/* Shipping / Delivery */}
             <div className="card bg-ivory">
               <div className="flex items-center gap-2 mb-2">
-                <Truck className="h-4 w-4 text-gold" />
-                <p className="text-xs text-taupe uppercase tracking-wider">Shipping</p>
+                {isDigital ? (
+                  <Zap className="h-4 w-4 text-gold" />
+                ) : (
+                  <Truck className="h-4 w-4 text-gold" />
+                )}
+                <p className="text-xs text-taupe uppercase tracking-wider">
+                  {isDigital ? 'Delivery' : 'Shipping'}
+                </p>
               </div>
-              <p className="text-sm text-taupe">
-                Shipping is calculated at checkout based on your location. The seller will provide tracking once shipped.
-              </p>
+              {isDigital ? (
+                <p className="text-sm text-taupe">
+                  Instant download — your files are ready the moment payment succeeds. No shipping,
+                  no waiting. Your download link is always available from your orders page.
+                </p>
+              ) : (
+                <p className="text-sm text-taupe">
+                  Shipping is calculated at checkout based on your location. The seller will provide tracking once shipped.
+                </p>
+              )}
             </div>
+
+            {/* Download — shown to buyers who already purchased this template */}
+            {isDigital && canDownload && (
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
+                className="btn w-full py-3.5 flex items-center justify-center gap-2 bg-gold text-charcoal hover:bg-gold/90 font-semibold rounded-lg transition-colors disabled:opacity-50"
+              >
+                <Download className="h-5 w-5" />
+                {downloading ? 'Preparing your download…' : 'Download Your Files'}
+              </button>
+            )}
 
             {/* Add to Cart */}
             {product.quantity > 0 ? (

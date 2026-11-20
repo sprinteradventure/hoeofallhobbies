@@ -20,18 +20,18 @@ export const dynamic = 'force-dynamic'
 //      seller's share on the platform.
 //   5. Decrement stock atomically per item (refuses to oversell -> 409).
 //   6. Create the order + order_items rows with status 'payment_pending',
-//      plus platform fee bookkeeping: 5% of the items subtotal PLUS the
+//      plus platform fee bookkeeping: 2% of the items subtotal PLUS the
 //      buyer's shipping payment (the platform buys the Shippo label, so the
 //      shipping money must stay with the platform, not the seller).
 //   7. Create a Stripe Checkout Session as a destination charge:
-//      the seller's Express account receives exactly 95% of the items
-//      subtotal; the platform keeps 5% + shipping via application_fee_amount.
+//      the seller's Express account receives exactly 98% of the items
+//      subtotal; the platform keeps 2% + shipping via application_fee_amount.
 //
 // The webhook (/api/webhooks/stripe) flips orders to 'paid' on
 // checkout.session.completed and clears the purchased cart items.
 // ============================================================================
 
-const PLATFORM_FEE_PERCENT = 5
+const PLATFORM_FEE_PERCENT = 2
 
 export async function POST(request: NextRequest) {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY
@@ -65,8 +65,9 @@ export async function POST(request: NextRequest) {
 
     // Real shipping selection from /api/shipping/rates. When present we
     // re-verify the rate with Shippo and charge ITS amount — the client's
-    // quoted price is never trusted. Absent = legacy flow (items only).
-    const shipping =
+    // quoted price is never trusted. Absent = legacy flow (items only), or a
+    // digital-only cart where nothing is shipped.
+    let shipping =
       body?.shipping && typeof body.shipping === 'object'
         ? {
             shipmentId: typeof body.shipping.shipmentId === 'string' ? body.shipping.shipmentId : null,
@@ -141,7 +142,69 @@ export async function POST(request: NextRequest) {
       new Set(scopedItems.map((item) => (item.product as any).seller_id as string))
     )
 
-    // --- Payout gate: the seller must be able to receive their 95% ----------
+    // --- Digital-only carts skip shipping entirely --------------------------
+    // Probe product_type in a separate query (not the cart join above) so a
+    // pre-migration database — column not added yet — reads as "all physical"
+    // instead of breaking every checkout.
+    let productTypeById = new Map<string, string>()
+    try {
+      const scopedProductIds = Array.from(new Set(scopedItems.map((item) => item.product_id)))
+      const { data: typeRows } = await admin
+        .from('products')
+        .select('id, product_type')
+        .in('id', scopedProductIds)
+      if (typeRows) {
+        productTypeById = new Map((typeRows as any[]).map((r) => [r.id, r.product_type]))
+      }
+    } catch {
+      // Column missing (migration 020 not applied): everything is physical.
+    }
+    const allDigital = scopedItems.every(
+      (item) => productTypeById.get(item.product_id) === 'digital'
+    )
+    if (allDigital) {
+      // Digital templates deliver instantly — never charge or require shipping,
+      // even if a stale client payload includes a shipping selection.
+      shipping = null
+    }
+
+    // --- Seller coupon (migration 018) --------------------------------------
+    // The buyer submits a code they got from the seller. Validated here with
+    // the service role — never trust the client's /api/coupons/validate
+    // result. Discount applies to the items subtotal only, never shipping.
+    const couponCode =
+      typeof body?.coupon_code === 'string' ? body.coupon_code.trim().toUpperCase() : ''
+    let coupon: { id: string; percent_off: number } | null = null
+    if (couponCode) {
+      if (scopedSellerIds.length !== 1) {
+        return NextResponse.json(
+          { error: 'Coupons apply to one shop at a time.', code: 'COUPON_INVALID' },
+          { status: 400 }
+        )
+      }
+      const { data: couponRow, error: couponError } = await admin
+        .from('seller_coupons')
+        .select('id, percent_off, max_uses, used_count, expires_at, is_active')
+        .eq('seller_id', scopedSellerIds[0])
+        .eq('code', couponCode)
+        .maybeSingle()
+
+      // Missing table (migration not applied) reads as an invalid code.
+      const invalid = (message: string) =>
+        NextResponse.json({ error: message, code: 'COUPON_INVALID' }, { status: 400 })
+
+      if (couponError || !couponRow) return invalid('That discount code isn\'t valid for this shop.')
+      if (!couponRow.is_active) return invalid('That discount code has been paused.')
+      if (couponRow.max_uses != null && couponRow.used_count >= couponRow.max_uses) {
+        return invalid('That discount code has been fully redeemed.')
+      }
+      if (couponRow.expires_at && new Date(couponRow.expires_at) < new Date()) {
+        return invalid('That discount code has expired.')
+      }
+      coupon = { id: couponRow.id, percent_off: couponRow.percent_off }
+    }
+
+    // --- Payout gate: the seller must be able to receive their 98% ----------
     const { data: sellerProfiles, error: sellerError } = await admin
       .from('user_profiles')
       .select('id, stripe_account_id, stripe_payouts_enabled')
@@ -274,13 +337,24 @@ export async function POST(request: NextRequest) {
 
     const orderIds: string[] = []
     for (const [sellerId, items] of scopedSellerOrders.entries()) {
-      const totalPrice = items.reduce(
+      const itemsSubtotal = items.reduce(
         (sum, item) => sum + (item.product as any).price * item.quantity,
         0
       )
-      // Platform fee = 5% of the items subtotal PLUS the shipping payment
-      // (the platform purchases the Shippo label, so shipping stays with the
-      // platform). The seller nets exactly 95% of the items subtotal.
+
+      // Seller coupon (if any) discounts THIS shop's items subtotal only —
+      // never the shipping payment. A coupon is only accepted for
+      // single-seller scopes (enforced above), so at most one iteration is
+      // discounted.
+      const discountAmount = coupon
+        ? Math.round(itemsSubtotal * coupon.percent_off) / 100
+        : 0
+      const totalPrice = Math.max(0, itemsSubtotal - discountAmount)
+
+      // Platform fee = 2% of the DISCOUNTED items subtotal PLUS the shipping
+      // payment (the platform purchases the Shippo label, so shipping stays
+      // with the platform). The seller nets exactly 98% of the discounted
+      // items subtotal.
       const platformFee =
         Math.round(totalPrice * PLATFORM_FEE_PERCENT) / 100 +
         (verifiedShipping?.amountDollars ?? 0)
@@ -294,6 +368,8 @@ export async function POST(request: NextRequest) {
           quantity: items.reduce((sum, item) => sum + item.quantity, 0),
           total_price: totalPrice,
           platform_fee: platformFee,
+          coupon_code: coupon ? couponCode : null,
+          discount_amount: discountAmount,
           shipping_address: shippingAddress,
           shipping_cost: verifiedShipping?.amountDollars ?? null,
           shipping_service_level: verifiedShipping?.serviceLevel ?? null,
@@ -328,14 +404,36 @@ export async function POST(request: NextRequest) {
       (sum, item) => sum + Math.round((item.product as any).price * 100) * item.quantity,
       0
     )
-    // application_fee_amount = 5% of items subtotal + the shipping payment.
-    // Stripe then transfers (charge total - fee) = exactly 95% of the items
-    // subtotal to the seller. The fee can never exceed the charge total by
-    // construction (charge = items + shipping); clamp defensively anyway.
+
+    // Seller coupon discount as a one-off Stripe coupon object. Keeping the
+    // discount on Stripe's side (rather than rewriting line-item prices)
+    // means the seller's dashboard math and the buyer's receipt both show a
+    // proper "Coupon (CODE): -$X" line. duration 'once' + max_redemptions 1
+    // makes the coupon object self-cleaning after this session.
+    let stripeCouponId: string | null = null
+    if (coupon) {
+      const stripeCoupon = await stripe.coupons.create({
+        percent_off: coupon.percent_off,
+        duration: 'once',
+        max_redemptions: 1,
+        name: `Seller code ${couponCode}`,
+      })
+      stripeCouponId = stripeCoupon.id
+    }
+    const discountCents = stripeCouponId
+      ? Math.round((subtotalCents * coupon!.percent_off) / 100)
+      : 0
+    const discountedSubtotalCents = subtotalCents - discountCents
+
+    // application_fee_amount = 2% of the DISCOUNTED items subtotal + the
+    // shipping payment. Stripe then transfers (charge total - fee) = exactly
+    // 98% of the discounted items subtotal to the seller. The fee can never
+    // exceed the charge total by construction (charge = items - discount +
+    // shipping); clamp defensively anyway.
     const shippingAmountCents = verifiedShipping?.amountCents ?? 0
-    const chargeTotalCents = subtotalCents + shippingAmountCents
+    const chargeTotalCents = discountedSubtotalCents + shippingAmountCents
     const applicationFeeCents = Math.min(
-      Math.round((subtotalCents * PLATFORM_FEE_PERCENT) / 100) + shippingAmountCents,
+      Math.round((discountedSubtotalCents * PLATFORM_FEE_PERCENT) / 100) + shippingAmountCents,
       chargeTotalCents
     )
 
@@ -385,7 +483,12 @@ export async function POST(request: NextRequest) {
         application_fee_amount: applicationFeeCents,
         transfer_data: { destination: destinationAccount },
       },
-      metadata: { order_ids: orderIds.join(','), buyer_id: user.id },
+      ...(stripeCouponId ? { discounts: [{ coupon: stripeCouponId }] } : {}),
+      metadata: {
+        order_ids: orderIds.join(','),
+        buyer_id: user.id,
+        ...(coupon ? { coupon_id: coupon.id } : {}),
+      },
       success_url: `${appUrl}/shop/orders?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/shop/cart`,
     })

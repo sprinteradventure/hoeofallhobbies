@@ -60,6 +60,12 @@ export interface Product {
   listing_date: string
   updated_at: string
   seller?: UserProfile
+  /** 'digital' = instant-download template; missing column (pre-migration) reads as physical */
+  product_type?: 'physical' | 'digital'
+  /** Storage path in the private digital-files bucket (digital products only) */
+  digital_file_path?: string | null
+  /** True when the seller disclosed AI-generated content (Terms of Service) */
+  ai_generated?: boolean
 }
 
 export interface Order {
@@ -144,4 +150,42 @@ export interface Message {
   body: string
   read_at?: string | null
   created_at: string
+}
+
+
+// ── Seller shops (migration 018) ────────────────────────────────────────────
+// Public storefront for each seller. RLS: world-readable, owner-writable.
+export interface Shop {
+  id: string
+  seller_id: string
+  slug: string
+  name: string
+  tagline?: string
+  story?: string
+  banner_url?: string
+  avatar_url?: string
+  announcement?: string
+  location?: string
+  website_url?: string
+  instagram_url?: string
+  pinterest_url?: string
+  facebook_url?: string
+  featured_product_ids?: string[]
+  created_at: string
+  updated_at: string
+}
+
+// Seller-issued coupon codes (migration 018). Managed by the seller from the
+// Marketing hub; validated server-side during checkout.
+export interface SellerCoupon {
+  id: string
+  seller_id: string
+  code: string
+  percent_off: number
+  max_uses: number | null
+  used_count: number
+  expires_at: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }

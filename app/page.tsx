@@ -63,7 +63,7 @@ export default async function Home() {
               <ShoppingBag className="h-5 w-5 mr-2" />
               Browse Shop
             </Link>
-            <Link href="/seller/listings/new" className="btn btn-secondary w-full sm:w-auto px-10 py-4 text-lg font-cormorant tracking-wider">
+            <Link href="/sell" className="btn btn-secondary w-full sm:w-auto px-10 py-4 text-lg font-cormorant tracking-wider">
               <Sparkles className="h-5 w-5 mr-2" />
               Start Selling
             </Link>
@@ -145,8 +145,8 @@ export default async function Home() {
                   },
                   {
                     step: '3',
-                    title: 'Keep 95%',
-                    description: 'We only take 5% to keep the marketplace running. You keep the rest.',
+                    title: 'Keep 98%',
+                    description: 'We only take 2% to keep the marketplace running. You keep the rest.',
                     icon: '💰'
                   }
                 ]
@@ -165,8 +165,8 @@ export default async function Home() {
                   },
                   {
                     step: '3',
-                    title: 'Keep 95%',
-                    description: 'We only take 5% to keep the marketplace running. You keep the rest.',
+                    title: 'Keep 98%',
+                    description: 'We only take 2% to keep the marketplace running. You keep the rest.',
                     icon: '💰'
                   }
                 ]
@@ -180,6 +180,50 @@ export default async function Home() {
                 <p className="text-taupe text-sm font-lora leading-relaxed">{item.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* For Sellers band */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-charcoal text-cream">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <span className="badge badge-gold mb-4 inline-flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" />
+                For sellers
+              </span>
+              <h2 className="text-4xl sm:text-5xl font-bold mb-4 font-cormorant tracking-wide text-balance">
+                A shop of your own, without the rent.
+              </h2>
+              <p className="text-cream/80 font-lora leading-relaxed mb-8">
+                {isHolidays
+                  ? 'Open a storefront for your decor and celebration creations. No listing fees, a flat 2% only when you sell, and built-in tools to bring your followers with you.'
+                  : 'Open a storefront for your craft and hobby finds. No listing fees, a flat 2% only when you sell, and built-in tools to bring your followers with you.'}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/sell" className="btn px-8 py-3.5 text-lg font-cormorant tracking-wider bg-gold text-white border border-gold hover:bg-opacity-90 hover:-translate-y-0.5 inline-flex items-center justify-center">
+                  Open your shop
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Link>
+                <Link href="/seller/marketing" className="btn px-8 py-3.5 text-lg font-cormorant tracking-wider border border-cream/40 text-cream hover:bg-cream/10 inline-flex items-center justify-center">
+                  See the marketing tools
+                </Link>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { title: 'Your own storefront', desc: 'A shareable page at /shops/your-name — banner, story, announcement bar, social links.' },
+                { title: 'Coupon codes', desc: 'Issue discount codes for your shop and share them with your audience.' },
+                { title: 'Pinterest-ready pins', desc: 'Every listing gets a branded 2:3 pin image, generated automatically.' },
+                { title: 'Keep 98%', desc: 'One flat 2% when you sell. No listing fees, no offsite-ad commissions.' },
+              ].map((item) => (
+                <div key={item.title} className="rounded-2xl border border-cream/15 bg-cream/5 p-5 hover:bg-cream/10 transition-colors">
+                  <h3 className="font-cormorant text-lg font-bold mb-1.5">{item.title}</h3>
+                  <p className="text-cream/70 text-sm font-lora leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -200,7 +244,7 @@ export default async function Home() {
                   { title: 'Cultural & Inclusive', desc: 'Find decor and supplies for holidays from every culture, religion, and tradition — all in one place.' },
                   { title: 'Seasonal Finds', desc: 'Discover rare, vintage, and handmade decorations you won\'t find in big-box stores.' },
                   { title: 'Community Driven', desc: 'Connect with fellow hosts, DIY decorators, and party planners worldwide.' },
-                  { title: 'Fair Pricing', desc: 'Transparent pricing: sellers keep 95%, we take only 5% to keep the marketplace running.' },
+                  { title: 'Fair Pricing', desc: 'Transparent pricing: sellers keep 98%, we take only 2% to keep the marketplace running.' },
                   { title: 'Secure Transactions', desc: 'Stripe-powered payments with buyer and seller protection for peace of mind.' },
                   { title: 'Easy Shipping', desc: 'Integrated shipping labels and tracking. Just add your carrier info when ready.' }
                 ]
@@ -208,7 +252,7 @@ export default async function Home() {
                   { title: 'Sustainable', desc: 'Give vintage and second-hand supplies a new home. Reduce waste, support circular crafting.' },
                   { title: 'Quality Finds', desc: 'Discover rare, vintage, and hard-to-find supplies you won\'t find anywhere else.' },
                   { title: 'Community Driven', desc: 'Connect with fellow crafters and hobbyists. Support creative makers worldwide.' },
-                  { title: 'Fair Pricing', desc: 'Transparent pricing: sellers keep 95%, we take only 5% to keep the marketplace running.' },
+                  { title: 'Fair Pricing', desc: 'Transparent pricing: sellers keep 98%, we take only 2% to keep the marketplace running.' },
                   { title: 'Secure Transactions', desc: 'Stripe-powered payments with buyer and seller protection for peace of mind.' },
                   { title: 'Easy Shipping', desc: 'Integrated shipping labels and tracking. Just add your carrier info when ready.' }
                 ]

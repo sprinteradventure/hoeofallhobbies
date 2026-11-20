@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { TrendingUp, Package, DollarSign, AlertCircle, ShoppingBag, Star, Users, Wallet, Truck, X } from 'lucide-react'
+import { TrendingUp, Package, DollarSign, AlertCircle, ShoppingBag, Star, Users, Wallet, Truck, X, Store, Megaphone } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { UserProfile } from '@/lib/types'
 import { SELLER_KEEP_PERCENT } from '@/lib/categories'
@@ -234,7 +234,15 @@ export default function SellerDashboard() {
                 <ShoppingBag className="h-4 w-4 mr-2" />
                 List New Product
               </Link>
-              <Link href="/seller/orders" className="btn btn-secondary w-full py-2.5">
+              <Link href="/seller/shop" className="btn btn-secondary w-full py-2.5">
+                <Store className="h-4 w-4 mr-2" />
+                My Shopfront
+              </Link>
+              <Link href="/seller/marketing" className="btn btn-secondary w-full py-2.5">
+                <Megaphone className="h-4 w-4 mr-2" />
+                Marketing &amp; Coupons
+              </Link>
+              <Link href="/seller/orders" className="btn btn-ghost w-full py-2.5 border border-blush">
                 View Orders
               </Link>
               <Link href="/seller/payouts" className="btn btn-ghost w-full py-2.5 border border-blush">

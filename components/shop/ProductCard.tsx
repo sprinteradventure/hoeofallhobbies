@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Star, Heart } from 'lucide-react'
 import { Product } from '@/lib/types'
 import ListingImage from './ListingImage'
@@ -10,6 +12,45 @@ interface Props {
 }
 
 export default function ProductCard({ product }: Props) {
+  const router = useRouter()
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  async function toggleSave(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (saving) return
+    setSaving(true)
+    try {
+      const { supabase } = await import('@/lib/supabase/client')
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/auth/login')
+        return
+      }
+      const res = await fetch('/api/saves', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ product_id: product.id }),
+      })
+      if (res.status === 401) {
+        router.push('/auth/login')
+        return
+      }
+      if (res.ok) {
+        const data = await res.json()
+        setSaved(!!data.saved)
+      }
+    } catch {
+      // offline / migration missing — heart just doesn't toggle
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <Link href={`/shop/products/${product.id}`}>
       <div className="card h-full hover:shadow-lg transition-shadow cursor-pointer space-y-3">
@@ -28,8 +69,14 @@ export default function ProductCard({ product }: Props) {
             </div>
           )}
           <div className="absolute top-2 right-2">
-            <button className="bg-white rounded-full p-2 hover:bg-neutral-100">
-              <Heart className="h-4 w-4" />
+            <button
+              onClick={toggleSave}
+              aria-label={saved ? 'Remove from saved items' : 'Save this item'}
+              className={`rounded-full p-2 transition-colors ${
+                saved ? 'bg-gold text-white' : 'bg-white hover:bg-neutral-100'
+              }`}
+            >
+              <Heart className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
             </button>
           </div>
           {product.condition !== 'new' && (

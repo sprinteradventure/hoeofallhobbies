@@ -36,11 +36,14 @@ export async function GET(request: NextRequest) {
     if (usersError) throw usersError
     if (productsError) throw productsError
 
-    // Revenue breakdown. Platform commission is 5% of order item totals
-    // (owner decision, June 2026) PLUS the buyer's shipping payment — the
-    // platform buys the Shippo label, so shipping stays with the platform.
-    // orders.platform_fee (migration 006) stores exactly that for new orders;
-    // total_price is items-only, so shipping_cost is added to gross sales.
+    // Revenue breakdown. Platform commission is 2% of order item totals
+    // (owner decision, June 2026; lowered to 2% in Nov 2026) PLUS the buyer's
+    // shipping payment — the platform buys the Shippo label, so shipping
+    // stays with the platform. total_price is items-only, so shipping_cost
+    // is added to gross sales. orders.platform_fee (migration 006) stores
+    // exactly that for new orders; the 0.05 fallback below is deliberately
+    // the HISTORICAL rate for pre-006 orders, which were charged at 5% —
+    // don't "fix" it to 0.02 or legacy revenue will be misstated.
     // 'Paid or later' = the buyer actually paid, so
     // payment_pending/disputed/refunded/cancelled orders are excluded.
     const PAID_STATUSES = ['paid', 'shipped', 'delivered', 'completed']
