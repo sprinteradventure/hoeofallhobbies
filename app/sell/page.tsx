@@ -56,7 +56,7 @@ export default function SellPage() {
   const steps = [
     {
       icon: Store,
-      title: 'Claim your shop',
+      title: 'Set up Shop',
       body: 'Pick a name and a web address. Your storefront goes live instantly — banner, story, announcement bar, social links.',
     },
     {

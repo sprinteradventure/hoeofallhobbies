@@ -196,7 +196,7 @@ export default function SellerDashboard() {
           <div className="flex gap-3">
             <Store className="h-5 w-5 text-gold flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-bold text-charcoal">Claim your free shopfront</h3>
+              <h3 className="font-bold text-charcoal">Set up Shop</h3>
               <p className="text-sm text-taupe mb-3">
                 Get your own shareable page at hoeofallhobbies.com/shops/your-name — custom banner,
                 your story, featured items, and a follow button for your buyers. Takes about two minutes.

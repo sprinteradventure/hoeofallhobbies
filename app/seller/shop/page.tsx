@@ -264,7 +264,7 @@ export default function SellerShopPage() {
           <p className="text-taupe font-lora mt-1">
             {form?.id
               ? 'Customize how your storefront looks to buyers.'
-              : 'Claim your storefront — it takes two minutes.'}
+              : 'Set up Shop — it takes two minutes.'}
           </p>
         </div>
         {form?.id && (

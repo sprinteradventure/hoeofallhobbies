@@ -205,7 +205,7 @@ export default async function Home() {
                   {
                     step: '1',
                     title: 'Open your free shop',
-                    description: `Claim your storefront, upload photos, set your price, and choose from ${categories.length}+ categories. No listing fees, ever.`,
+                    description: `Set up Shop, upload photos, set your price, and choose from ${categories.length}+ categories. No listing fees, ever.`,
                     icon: '✨'
                   },
                   {
@@ -225,7 +225,7 @@ export default async function Home() {
                   {
                     step: '1',
                     title: 'Open your free shop',
-                    description: `Claim your storefront, upload photos, set your price, and choose from ${categories.length}+ categories. No listing fees, ever.`,
+                    description: `Set up Shop, upload photos, set your price, and choose from ${categories.length}+ categories. No listing fees, ever.`,
                     icon: '✨'
                   },
                   {
